@@ -283,6 +283,66 @@ const deleteUser = async (userId) => {
   });
 };
 
+/**
+ * Registrar push token do usuário
+ */
+const registerPushToken = async (userId, token) => {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { pushToken: token },
+    select: { id: true, pushToken: true }
+  });
+
+  return user;
+};
+
+/**
+ * Remover push token do usuário
+ */
+const removePushToken = async (userId) => {
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: { pushToken: null },
+    select: { id: true }
+  });
+
+  return user;
+};
+
+/**
+ * Obter push tokens de usuários de um condomínio
+ */
+const getPushTokensByCondominium = async (condominiumId, excludeUserId = null) => {
+  const where = {
+    condominiumId,
+    status: 'ACTIVE',
+    pushToken: { not: null }
+  };
+
+  if (excludeUserId) {
+    where.id = { not: excludeUserId };
+  }
+
+  const users = await prisma.user.findMany({
+    where,
+    select: { id: true, pushToken: true, name: true }
+  });
+
+  return users;
+};
+
+/**
+ * Obter push token de um usuário específico
+ */
+const getUserPushToken = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, pushToken: true, name: true }
+  });
+
+  return user;
+};
+
 module.exports = {
   getUserById,
   updateUser,
@@ -293,5 +353,9 @@ module.exports = {
   updateUserStatus,
   updateUserRole,
   assignUserToUnit,
-  deleteUser
+  deleteUser,
+  registerPushToken,
+  removePushToken,
+  getPushTokensByCondominium,
+  getUserPushToken
 };

@@ -29,6 +29,10 @@ const updateRoleValidation = [
 router.get('/profile', usersController.getProfile);
 router.put('/profile', updateUserValidation, usersController.updateProfile);
 
+// Rotas de push notifications
+router.post('/push-token', usersController.registerPushToken);
+router.delete('/push-token', usersController.removePushToken);
+
 // Rotas para listar usuários (moradores, zelador)
 router.get('/residents', usersController.getResidents);
 router.get('/janitors', usersController.getJanitors);

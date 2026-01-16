@@ -185,6 +185,37 @@ const deleteUser = async (req, res, next) => {
   }
 };
 
+/**
+ * Registrar push token
+ */
+const registerPushToken = async (req, res, next) => {
+  try {
+    const { token, platform } = req.body;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Token é obrigatório' });
+    }
+
+    const user = await usersService.registerPushToken(req.user.id, token);
+
+    res.json({ message: 'Push token registrado com sucesso', user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * Remover push token
+ */
+const removePushToken = async (req, res, next) => {
+  try {
+    await usersService.removePushToken(req.user.id);
+    res.json({ message: 'Push token removido com sucesso' });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   getProfile,
   updateProfile,
@@ -196,5 +227,7 @@ module.exports = {
   updateUserStatus,
   updateUserRole,
   assignUserToUnit,
-  deleteUser
+  deleteUser,
+  registerPushToken,
+  removePushToken
 };
