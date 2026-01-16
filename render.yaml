@@ -38,7 +38,6 @@ services:
     name: interfoneapp-admin
     runtime: static
     plan: free
-    region: oregon
     rootDir: web-admin
     buildCommand: npm install && npm run build
     staticPublishPath: dist
@@ -61,7 +60,6 @@ services:
     name: interfoneapp-visitor
     runtime: static
     plan: free
-    region: oregon
     rootDir: web-visitor
     buildCommand: npm install && npm run build
     staticPublishPath: dist
