@@ -45,6 +45,11 @@ const menuItems = [
     path: '/calls'
   },
   {
+    title: 'Mensagens',
+    icon: MessageSquare,
+    path: '/chat'
+  },
+  {
     title: 'Chegadas',
     icon: Car,
     path: '/access/arrivals',

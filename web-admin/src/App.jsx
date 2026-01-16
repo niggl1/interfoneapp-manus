@@ -20,6 +20,7 @@ import JanitorsPage from './pages/users/JanitorsPage';
 import CallHistoryPage from './pages/calls/CallHistoryPage';
 import AnnouncementsPage from './pages/announcements/AnnouncementsPage';
 import ArrivalNoticesPage from './pages/access/ArrivalNoticesPage';
+import ChatPage from './pages/chat/ChatPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -65,6 +66,9 @@ function App() {
                 
                 {/* Calls */}
                 <Route path="/calls" element={<CallHistoryPage />} />
+                
+                {/* Chat */}
+                <Route path="/chat" element={<ChatPage />} />
                 
                 {/* Access Control */}
                 <Route path="/access/arrivals" element={<ArrivalNoticesPage />} />
