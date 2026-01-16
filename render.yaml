@@ -34,10 +34,8 @@ services:
         value: https://interfoneapp-admin.onrender.com,https://interfoneapp-visitor.onrender.com
 
   # Web Admin (Frontend)
-  - type: web
+  - type: static
     name: interfoneapp-admin
-    runtime: static
-    plan: free
     rootDir: web-admin
     buildCommand: npm install && npm run build
     staticPublishPath: dist
@@ -56,10 +54,8 @@ services:
         value: https://interfoneapp-api.onrender.com
 
   # Web Visitor (Frontend)
-  - type: web
+  - type: static
     name: interfoneapp-visitor
-    runtime: static
-    plan: free
     rootDir: web-visitor
     buildCommand: npm install && npm run build
     staticPublishPath: dist
