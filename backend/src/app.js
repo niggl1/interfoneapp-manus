@@ -10,6 +10,7 @@ const authRoutes = require('./modules/auth/auth.routes');
 const userRoutes = require('./modules/users/users.routes');
 const unitRoutes = require('./modules/units/units.routes');
 const communicationRoutes = require('./modules/communication/communication.routes');
+const arrivalRoutes = require('./modules/arrival/arrival.routes');
 
 // Importar middlewares
 const errorHandler = require('./middlewares/errorHandler');
@@ -44,6 +45,7 @@ app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/units', unitRoutes);
 app.use('/api/v1/communication', communicationRoutes);
+app.use('/api/v1/arrival', arrivalRoutes);
 
 // Rota de health check
 app.get('/api/v1/health', (req, res) => {
