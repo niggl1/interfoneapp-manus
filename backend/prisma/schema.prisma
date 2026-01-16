@@ -1,0 +1,227 @@
+// Prisma Schema para InterfoneApp
+// Documentação: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==================== ENUMS ====================
+
+enum UserRole {
+  ADMIN       // Administrador do sistema
+  MANAGER     // Síndico/Administrador do condomínio
+  JANITOR     // Zelador
+  RESIDENT    // Morador
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  PENDING
+}
+
+enum CallStatus {
+  RINGING
+  ANSWERED
+  MISSED
+  REJECTED
+  ENDED
+}
+
+enum CallType {
+  VIDEO
+  AUDIO
+}
+
+enum MessageStatus {
+  SENT
+  DELIVERED
+  READ
+}
+
+// ==================== MODELS ====================
+
+// Condomínio
+model Condominium {
+  id          String   @id @default(uuid())
+  name        String
+  address     String
+  city        String
+  state       String
+  zipCode     String
+  phone       String?
+  email       String?
+  qrCode      String?  @unique // QR Code geral do condomínio
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  blocks      Block[]
+  users       User[]
+  announcements Announcement[]
+
+  @@map("condominiums")
+}
+
+// Bloco/Torre
+model Block {
+  id            String   @id @default(uuid())
+  name          String   // Ex: "Bloco A", "Torre 1"
+  condominiumId String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  condominium   Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+  units         Unit[]
+
+  @@map("blocks")
+}
+
+// Unidade/Apartamento
+model Unit {
+  id        String   @id @default(uuid())
+  number    String   // Número do apartamento
+  floor     Int?     // Andar
+  blockId   String
+  qrCode    String?  @unique // QR Code específico da unidade
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  block     Block    @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  residents User[]
+
+  @@unique([blockId, number])
+  @@map("units")
+}
+
+// Usuário (Morador, Zelador, Admin)
+model User {
+  id            String     @id @default(uuid())
+  email         String     @unique
+  password      String
+  name          String
+  phone         String?
+  avatar        String?    // URL da foto
+  role          UserRole   @default(RESIDENT)
+  status        UserStatus @default(PENDING)
+  condominiumId String?
+  unitId        String?    // Apenas para moradores
+  pushToken     String?    // Token FCM para notificações
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  condominium   Condominium? @relation(fields: [condominiumId], references: [id], onDelete: SetNull)
+  unit          Unit?        @relation(fields: [unitId], references: [id], onDelete: SetNull)
+  
+  // Relacionamentos de chamadas
+  callsMade     Call[]       @relation("CallCaller")
+  callsReceived Call[]       @relation("CallReceiver")
+  
+  // Relacionamentos de mensagens
+  messagesSent     Message[] @relation("MessageSender")
+  messagesReceived Message[] @relation("MessageReceiver")
+  
+  // Tokens de refresh
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+// Token de Refresh para autenticação
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+// Registro de Chamadas
+model Call {
+  id         String     @id @default(uuid())
+  callerId   String?    // Pode ser null para visitantes
+  receiverId String
+  callerName String?    // Nome do visitante (quando não é usuário)
+  callerType String     @default("user") // "user" ou "visitor"
+  type       CallType   @default(VIDEO)
+  status     CallStatus @default(RINGING)
+  startedAt  DateTime   @default(now())
+  answeredAt DateTime?
+  endedAt    DateTime?
+  duration   Int?       // Duração em segundos
+
+  caller     User?      @relation("CallCaller", fields: [callerId], references: [id], onDelete: SetNull)
+  receiver   User       @relation("CallReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("calls")
+}
+
+// Mensagens
+model Message {
+  id         String        @id @default(uuid())
+  senderId   String
+  receiverId String
+  content    String
+  status     MessageStatus @default(SENT)
+  createdAt  DateTime      @default(now())
+  readAt     DateTime?
+
+  sender     User          @relation("MessageSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver   User          @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+// Comunicados/Avisos
+model Announcement {
+  id            String   @id @default(uuid())
+  title         String
+  content       String
+  condominiumId String
+  authorId      String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  condominium   Condominium @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+
+  @@map("announcements")
+}
+
+// ==================== FASE 2 (Preparado, não exposto) ====================
+
+// Dispositivo IoT para controle de acesso
+model AccessDevice {
+  id            String   @id @default(uuid())
+  name          String   // Ex: "Portão Principal"
+  condominiumId String
+  protocol      String   // "REST" ou "MQTT"
+  endpoint      String   // URL ou tópico MQTT
+  method        String?  // GET, POST (para REST)
+  headers       Json?    // Headers customizados
+  body          Json?    // Body da requisição
+  isActive      Boolean  @default(false) // Desativado até Fase 2
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@map("access_devices")
+}
+
+// Log de acessos físicos
+model AccessLog {
+  id         String   @id @default(uuid())
+  deviceId   String
+  userId     String?
+  action     String   // "open", "close"
+  success    Boolean
+  createdAt  DateTime @default(now())
+
+  @@map("access_logs")
+}
