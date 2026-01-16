@@ -31,8 +31,13 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
-  const login = async (email, password) => {
-    const response = await api.post('/auth/login', { email, password });
+  const login = async (identifier, password, loginType = 'email') => {
+    // Preparar o payload baseado no tipo de login
+    const payload = loginType === 'phone' 
+      ? { phone: identifier, password }
+      : { email: identifier, password };
+    
+    const response = await api.post('/auth/login', payload);
     const { user, tokens } = response.data;
 
     // Verificar se o usuário tem permissão de admin
