@@ -7,7 +7,10 @@ import {
   MessageSquare,
   Settings,
   LogOut,
-  ChevronDown
+  ChevronDown,
+  Phone,
+  Car,
+  Megaphone
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useState } from 'react';
@@ -37,8 +40,19 @@ const menuItems = [
     ]
   },
   {
+    title: 'Chamadas',
+    icon: Phone,
+    path: '/calls'
+  },
+  {
+    title: 'Chegadas',
+    icon: Car,
+    path: '/access/arrivals',
+    roles: ['ADMIN', 'MANAGER', 'JANITOR']
+  },
+  {
     title: 'Comunicados',
-    icon: MessageSquare,
+    icon: Megaphone,
     path: '/announcements'
   },
   {
@@ -48,16 +62,21 @@ const menuItems = [
   }
 ];
 
-function MenuItem({ item }) {
+function MenuItem({ item, userRole }) {
   const [isOpen, setIsOpen] = useState(false);
   const Icon = item.icon;
+
+  // Verificar permissão de role
+  if (item.roles && !item.roles.includes(userRole)) {
+    return null;
+  }
 
   if (item.submenu) {
     return (
       <div>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="w-full flex items-center justify-between px-4 py-3 text-slate-300 rounded-lg transition-colors"
+          className="w-full flex items-center justify-between px-4 py-3 text-slate-300 hover:bg-slate-800 rounded-lg transition-colors"
         >
           <div className="flex items-center gap-3">
             <Icon className="w-5 h-5" />
@@ -76,7 +95,7 @@ function MenuItem({ item }) {
                   `block px-4 py-2 rounded-lg transition-colors ${
                     isActive
                       ? 'bg-blue-600 text-white'
-                      : 'text-slate-400'
+                      : 'text-slate-400 hover:text-white hover:bg-slate-800'
                   }`
                 }
               >
@@ -96,7 +115,7 @@ function MenuItem({ item }) {
         `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
           isActive
             ? 'bg-blue-600 text-white'
-            : 'text-slate-300'
+            : 'text-slate-300 hover:bg-slate-800'
         }`
       }
     >
@@ -108,6 +127,18 @@ function MenuItem({ item }) {
 
 export default function Sidebar() {
   const { user, logout } = useAuth();
+
+  const getRoleBadge = (role) => {
+    const badges = {
+      ADMIN: { label: 'Admin', color: 'bg-red-500' },
+      MANAGER: { label: 'Síndico', color: 'bg-purple-500' },
+      JANITOR: { label: 'Zelador', color: 'bg-orange-500' },
+      RESIDENT: { label: 'Morador', color: 'bg-blue-500' }
+    };
+    return badges[role] || { label: role, color: 'bg-slate-500' };
+  };
+
+  const roleBadge = getRoleBadge(user?.role);
 
   return (
     <aside className="w-64 bg-slate-900 min-h-screen flex flex-col">
@@ -125,9 +156,9 @@ export default function Sidebar() {
       </div>
 
       {/* Menu */}
-      <nav className="flex-1 p-4 space-y-1">
+      <nav className="flex-1 p-4 space-y-1 overflow-y-auto">
         {menuItems.map((item) => (
-          <MenuItem key={item.title} item={item} />
+          <MenuItem key={item.title} item={item} userRole={user?.role} />
         ))}
       </nav>
 
@@ -141,12 +172,16 @@ export default function Sidebar() {
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-sm font-medium text-white truncate">{user?.name}</p>
-            <p className="text-xs text-slate-500 truncate">{user?.email}</p>
+            <div className="flex items-center gap-2">
+              <span className={`px-2 py-0.5 text-xs text-white rounded-full ${roleBadge.color}`}>
+                {roleBadge.label}
+              </span>
+            </div>
           </div>
         </div>
         <button
           onClick={logout}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-slate-400 rounded-lg transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800 rounded-lg transition-colors"
         >
           <LogOut className="w-4 h-4" />
           <span>Sair</span>

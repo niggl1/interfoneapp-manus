@@ -9,14 +9,17 @@ const { Server } = require('socket.io');
 const authRoutes = require('./modules/auth/auth.routes');
 const userRoutes = require('./modules/users/users.routes');
 const unitRoutes = require('./modules/units/units.routes');
+const callsRoutes = require('./modules/calls/calls.routes');
 const communicationRoutes = require('./modules/communication/communication.routes');
 const arrivalRoutes = require('./modules/arrival/arrival.routes');
+const accessRoutes = require('./modules/access/access.routes');
 
 // Importar middlewares
 const errorHandler = require('./middlewares/errorHandler');
 
 // Importar Socket handlers
 const setupSocketHandlers = require('./modules/communication/socket.handler');
+const { setupCallsHandler } = require('./socket/calls.handler');
 
 const app = express();
 const server = http.createServer(app);
@@ -65,8 +68,10 @@ app.set('io', io);
 app.use('/api/v1/auth', authRoutes);
 app.use('/api/v1/users', userRoutes);
 app.use('/api/v1/units', unitRoutes);
+app.use('/api/v1/calls', callsRoutes);
 app.use('/api/v1/communication', communicationRoutes);
 app.use('/api/v1/arrival', arrivalRoutes);
+app.use('/api/v1/access', accessRoutes);
 
 // Rota de health check
 app.get('/api/v1/health', (req, res) => {
@@ -90,6 +95,7 @@ app.use(errorHandler);
 
 // Configurar handlers do Socket.io
 setupSocketHandlers(io);
+setupCallsHandler(io);
 
 // Iniciar servidor
 const PORT = process.env.PORT || 3000;
@@ -97,6 +103,7 @@ const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
   console.log(`📡 WebSocket disponível`);
+  console.log(`📞 Sistema de chamadas WebRTC ativo`);
   console.log(`🔗 Health check: http://localhost:${PORT}/api/v1/health`);
 });
 

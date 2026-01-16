@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Building2, Search, Phone, User, Home, Loader2 } from 'lucide-react';
+import { Building2, Search, Phone, User, Home, Loader2, AlertCircle } from 'lucide-react';
 import { visitorApi } from '../services/api';
 
 export default function EntryPage() {
@@ -9,44 +9,54 @@ export default function EntryPage() {
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [dataType, setDataType] = useState(null); // 'unit' or 'condominium'
   const [unitInfo, setUnitInfo] = useState(null);
+  const [condominiumInfo, setCondominiumInfo] = useState(null);
   const [residents, setResidents] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchMode, setSearchMode] = useState('list'); // 'list' or 'search'
   const [visitorName, setVisitorName] = useState('');
   const [showNameModal, setShowNameModal] = useState(false);
   const [selectedResident, setSelectedResident] = useState(null);
+  const [selectedBlock, setSelectedBlock] = useState(null);
+  const [selectedUnit, setSelectedUnit] = useState(null);
 
   useEffect(() => {
     if (qrCode) {
-      fetchUnitInfo();
+      fetchQRCodeInfo();
     }
   }, [qrCode]);
 
-  const fetchUnitInfo = async () => {
+  const fetchQRCodeInfo = async () => {
     setLoading(true);
     setError(null);
     
     try {
       const data = await visitorApi.getUnitByQRCode(qrCode);
-      setUnitInfo(data.unit);
-      setResidents(data.residents || []);
+      
+      if (data.type === 'unit') {
+        setDataType('unit');
+        setUnitInfo(data.data);
+        setResidents(data.data.residents || []);
+      } else if (data.type === 'condominium') {
+        setDataType('condominium');
+        setCondominiumInfo(data.data);
+      }
     } catch (err) {
-      console.error('Erro ao buscar unidade:', err);
-      // Dados mockados para demonstração
-      setUnitInfo({
-        id: '1',
-        number: '101',
-        block: { name: 'Bloco A' },
-        condominium: { name: 'Condomínio Manus' }
-      });
-      setResidents([
-        { id: '1', name: 'Maria Santos', phone: '(11) 99999-1111' },
-        { id: '2', name: 'João Santos', phone: '(11) 99999-2222' }
-      ]);
+      console.error('Erro ao buscar informações:', err);
+      setError('QR Code não encontrado ou inválido');
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleSelectBlock = (block) => {
+    setSelectedBlock(block);
+  };
+
+  const handleSelectUnit = async (unit) => {
+    setSelectedUnit(unit);
+    setResidents(unit.residents || []);
   };
 
   const handleSearch = async () => {
@@ -54,8 +64,27 @@ export default function EntryPage() {
     
     setLoading(true);
     try {
-      const data = await visitorApi.searchResidents(unitInfo?.condominium?.id, searchQuery);
-      setResidents(data.residents || []);
+      // Buscar em todas as unidades do condomínio
+      // Por enquanto, filtrar localmente
+      if (condominiumInfo) {
+        const allResidents = [];
+        condominiumInfo.blocks?.forEach(block => {
+          block.units?.forEach(unit => {
+            unit.residents?.forEach(resident => {
+              if (resident.name.toLowerCase().includes(searchQuery.toLowerCase())) {
+                allResidents.push({
+                  ...resident,
+                  unit: {
+                    ...unit,
+                    block: { name: block.name }
+                  }
+                });
+              }
+            });
+          });
+        });
+        setResidents(allResidents);
+      }
     } catch (err) {
       console.error('Erro na busca:', err);
     } finally {
@@ -75,9 +104,18 @@ export default function EntryPage() {
       state: {
         resident: selectedResident,
         visitorName: visitorName.trim(),
-        unitInfo
+        unitInfo: selectedUnit || unitInfo
       }
     });
+  };
+
+  const handleBack = () => {
+    if (selectedUnit) {
+      setSelectedUnit(null);
+      setResidents([]);
+    } else if (selectedBlock) {
+      setSelectedBlock(null);
+    }
   };
 
   if (loading) {
@@ -96,29 +134,143 @@ export default function EntryPage() {
       <div className="min-h-screen bg-gradient-dark flex items-center justify-center p-4">
         <div className="bg-white rounded-2xl p-8 max-w-md w-full text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Building2 className="w-8 h-8 text-red-500" />
+            <AlertCircle className="w-8 h-8 text-red-500" />
           </div>
           <h1 className="text-xl font-bold text-slate-800 mb-2">QR Code Inválido</h1>
-          <p className="text-slate-600">{error}</p>
+          <p className="text-slate-600 mb-6">{error}</p>
+          <button
+            onClick={() => navigate('/')}
+            className="py-3 px-6 bg-gradient-primary text-white rounded-xl font-medium"
+          >
+            Voltar ao Início
+          </button>
         </div>
       </div>
     );
   }
 
+  // Renderizar seleção de bloco (quando QR é do condomínio)
+  if (dataType === 'condominium' && !selectedBlock) {
+    return (
+      <div className="min-h-screen bg-gradient-dark">
+        {/* Header */}
+        <div className="bg-gradient-primary p-6 pb-20 rounded-b-3xl">
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          <h1 className="text-white text-xl font-bold text-center">
+            {condominiumInfo?.name || 'Condomínio'}
+          </h1>
+          <p className="text-blue-100 text-center mt-1">
+            Selecione o bloco
+          </p>
+        </div>
+
+        {/* Content */}
+        <div className="px-4 -mt-12">
+          <div className="bg-white rounded-2xl shadow-xl p-6 animate-fade-in">
+            <h2 className="text-sm font-medium text-slate-500 mb-3">Blocos disponíveis</h2>
+            
+            <div className="space-y-3">
+              {condominiumInfo?.blocks?.map((block) => (
+                <button
+                  key={block.id}
+                  onClick={() => handleSelectBlock(block)}
+                  className="w-full flex items-center gap-4 p-4 bg-slate-50 rounded-xl transition-colors active:bg-slate-100"
+                >
+                  <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center flex-shrink-0">
+                    <Building2 className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="flex-1 text-left">
+                    <p className="font-medium text-slate-800">{block.name}</p>
+                    <p className="text-sm text-slate-500">
+                      {block.units?.length || 0} unidades
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderizar seleção de unidade (quando bloco foi selecionado)
+  if (dataType === 'condominium' && selectedBlock && !selectedUnit) {
+    return (
+      <div className="min-h-screen bg-gradient-dark">
+        {/* Header */}
+        <div className="bg-gradient-primary p-6 pb-20 rounded-b-3xl">
+          <button
+            onClick={handleBack}
+            className="text-white/80 text-sm mb-4"
+          >
+            ← Voltar
+          </button>
+          <div className="flex items-center justify-center mb-4">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
+              <Building2 className="w-6 h-6 text-white" />
+            </div>
+          </div>
+          <h1 className="text-white text-xl font-bold text-center">
+            {selectedBlock.name}
+          </h1>
+          <p className="text-blue-100 text-center mt-1">
+            Selecione o apartamento
+          </p>
+        </div>
+
+        {/* Content */}
+        <div className="px-4 -mt-12">
+          <div className="bg-white rounded-2xl shadow-xl p-6 animate-fade-in">
+            <h2 className="text-sm font-medium text-slate-500 mb-3">Apartamentos</h2>
+            
+            <div className="grid grid-cols-3 gap-3">
+              {selectedBlock.units?.map((unit) => (
+                <button
+                  key={unit.id}
+                  onClick={() => handleSelectUnit(unit)}
+                  className="p-4 bg-slate-50 rounded-xl transition-colors active:bg-slate-100 text-center"
+                >
+                  <p className="font-bold text-slate-800 text-lg">{unit.number}</p>
+                  <p className="text-xs text-slate-500">
+                    {unit.residents?.length || 0} morador(es)
+                  </p>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Renderizar lista de moradores (quando unidade foi selecionada ou QR é da unidade)
   return (
     <div className="min-h-screen bg-gradient-dark">
       {/* Header */}
       <div className="bg-gradient-primary p-6 pb-20 rounded-b-3xl">
+        {(selectedUnit || selectedBlock) && (
+          <button
+            onClick={handleBack}
+            className="text-white/80 text-sm mb-4"
+          >
+            ← Voltar
+          </button>
+        )}
         <div className="flex items-center justify-center mb-4">
           <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center">
             <Building2 className="w-6 h-6 text-white" />
           </div>
         </div>
         <h1 className="text-white text-xl font-bold text-center">
-          {unitInfo?.condominium?.name || 'Condomínio'}
+          {condominiumInfo?.name || unitInfo?.block?.condominium?.name || 'Condomínio'}
         </h1>
         <p className="text-blue-100 text-center mt-1">
-          {unitInfo?.block?.name} - Apt. {unitInfo?.number}
+          {selectedBlock?.name || unitInfo?.block?.name} - Apt. {selectedUnit?.number || unitInfo?.number}
         </p>
       </div>
 
@@ -160,7 +312,7 @@ export default function EntryPage() {
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
-                    placeholder="Nome ou apartamento"
+                    placeholder="Nome do morador"
                     className="w-full pl-10 pr-4 py-3 bg-slate-100 rounded-xl text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   />
                 </div>
