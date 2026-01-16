@@ -44,6 +44,13 @@ enum MessageStatus {
   READ
 }
 
+enum ChatType {
+  DIRECT        // Chat direto entre 2 pessoas
+  GROUP         // Chat em grupo (condomínio)
+  VISITOR       // Chat com visitante
+  SUPPORT       // Chat com portaria/suporte
+}
+
 // ==================== MODELS ====================
 
 // Condomínio
@@ -63,6 +70,7 @@ model Condominium {
   blocks      Block[]
   users       User[]
   announcements Announcement[]
+  chatRooms   ChatRoom[]
 
   @@map("condominiums")
 }
@@ -121,9 +129,13 @@ model User {
   callsMade     Call[]       @relation("CallCaller")
   callsReceived Call[]       @relation("CallReceiver")
   
-  // Relacionamentos de mensagens
+  // Relacionamentos de mensagens (legado)
   messagesSent     Message[] @relation("MessageSender")
   messagesReceived Message[] @relation("MessageReceiver")
+  
+  // Relacionamentos de chat
+  chatRoomMembers  ChatRoomMember[]
+  chatMessages     ChatMessage[]
   
   // Tokens de refresh
   refreshTokens RefreshToken[]
@@ -186,7 +198,7 @@ model Call {
   @@map("calls")
 }
 
-// Mensagens
+// Mensagens (legado - mantido para compatibilidade)
 model Message {
   id         String        @id @default(uuid())
   senderId   String
@@ -200,6 +212,67 @@ model Message {
   receiver   User          @relation("MessageReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
 
   @@map("messages")
+}
+
+// ==================== SISTEMA DE CHAT ====================
+
+// Sala de Chat
+model ChatRoom {
+  id            String    @id @default(uuid())
+  name          String?   // Nome do grupo (para chats em grupo)
+  type          ChatType  @default(DIRECT)
+  condominiumId String?   // Para chats de condomínio
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Para chat com visitante
+  visitorName   String?
+  visitorPhone  String?
+  
+  condominium   Condominium? @relation(fields: [condominiumId], references: [id], onDelete: Cascade)
+  members       ChatRoomMember[]
+  messages      ChatMessage[]
+
+  @@map("chat_rooms")
+}
+
+// Membros da Sala de Chat
+model ChatRoomMember {
+  id         String   @id @default(uuid())
+  chatRoomId String
+  userId     String
+  isAdmin    Boolean  @default(false) // Admin do grupo
+  joinedAt   DateTime @default(now())
+  leftAt     DateTime?
+  lastReadAt DateTime? // Última vez que leu as mensagens
+  
+  chatRoom   ChatRoom @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([chatRoomId, userId])
+  @@map("chat_room_members")
+}
+
+// Mensagens do Chat
+model ChatMessage {
+  id         String        @id @default(uuid())
+  chatRoomId String
+  senderId   String?       // Null para mensagens do sistema ou visitante
+  content    String
+  type       String        @default("text") // text, image, audio, system
+  status     MessageStatus @default(SENT)
+  
+  // Para mensagens de visitante (quando senderId é null)
+  senderName String?
+  
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  
+  chatRoom   ChatRoom      @relation(fields: [chatRoomId], references: [id], onDelete: Cascade)
+  sender     User?         @relation(fields: [senderId], references: [id], onDelete: SetNull)
+
+  @@map("chat_messages")
 }
 
 // Comunicados/Avisos
