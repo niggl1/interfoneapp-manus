@@ -174,6 +174,28 @@ const updatePushToken = async (req, res, next) => {
   }
 };
 
+/**
+ * Seed admin - criar ou atualizar usuário admin inicial
+ */
+const seedAdmin = async (req, res, next) => {
+  try {
+    const { email, password, name, secretKey } = req.body;
+
+    if (!email || !password || !name || !secretKey) {
+      return res.status(400).json({ error: 'Email, senha, nome e chave secreta são obrigatórios' });
+    }
+
+    const result = await authService.seedAdmin(email, password, name, secretKey);
+
+    res.json({
+      message: `Admin ${result.action === 'created' ? 'criado' : 'atualizado'} com sucesso`,
+      user: result.user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -183,5 +205,6 @@ module.exports = {
   updatePassword,
   forgotPassword,
   resetPassword,
-  updatePushToken
+  updatePushToken,
+  seedAdmin
 };

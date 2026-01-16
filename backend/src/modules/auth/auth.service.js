@@ -82,15 +82,10 @@ const login = async (email, password) => {
   const user = await prisma.user.findUnique({
     where: { email },
     include: {
-      condominium: {
-        select: { id: true, name: true }
-      },
+      condominium: true,
       unit: {
-        select: { id: true, number: true },
         include: {
-          block: {
-            select: { id: true, name: true }
-          }
+          block: true
         }
       }
     }
@@ -199,8 +194,9 @@ const getUserById = async (userId) => {
         select: { id: true, name: true }
       },
       unit: {
-        select: { id: true, number: true },
-        include: {
+        select: { 
+          id: true, 
+          number: true,
           block: {
             select: { id: true, name: true }
           }
@@ -298,6 +294,65 @@ const updatePushToken = async (userId, pushToken) => {
   });
 };
 
+/**
+ * Seed admin - criar ou atualizar usuário admin inicial
+ * Endpoint protegido por chave secreta
+ */
+const seedAdmin = async (email, password, name, secretKey) => {
+  // Verificar chave secreta
+  const validKey = process.env.ADMIN_SEED_KEY || 'interfoneapp-admin-seed-2026';
+  if (secretKey !== validKey) {
+    const error = new Error('Chave secreta inválida');
+    error.statusCode = 403;
+    throw error;
+  }
+
+  // Verificar se usuário existe
+  const existingUser = await prisma.user.findUnique({ where: { email } });
+
+  if (existingUser) {
+    // Atualizar para admin e ativo
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.update({
+      where: { email },
+      data: {
+        password: hashedPassword,
+        name,
+        role: 'ADMIN',
+        status: 'ACTIVE'
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        status: true
+      }
+    });
+    return { user, action: 'updated' };
+  } else {
+    // Criar novo admin
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        name,
+        role: 'ADMIN',
+        status: 'ACTIVE'
+      },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        role: true,
+        status: true
+      }
+    });
+    return { user, action: 'created' };
+  }
+};
+
 module.exports = {
   register,
   login,
@@ -307,5 +362,6 @@ module.exports = {
   updatePassword,
   forgotPassword,
   resetPassword,
-  updatePushToken
+  updatePushToken,
+  seedAdmin
 };
