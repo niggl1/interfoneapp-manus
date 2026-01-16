@@ -127,6 +127,11 @@ model User {
   
   // Tokens de refresh
   refreshTokens RefreshToken[]
+  
+  // Função "Estou Chegando"
+  pin           UserPin?
+  vehicles      Vehicle[]
+  arrivalNotices ArrivalNotice[]
 
   @@map("users")
 }
@@ -224,4 +229,89 @@ model AccessLog {
   createdAt  DateTime @default(now())
 
   @@map("access_logs")
+}
+
+
+// ==================== FUNÇÃO "ESTOU CHEGANDO" ====================
+
+enum ArrivalStatus {
+  PENDING     // Aviso enviado, aguardando confirmação do porteiro
+  CONFIRMED   // Porteiro confirmou recebimento
+  ARRIVING_500M // Morador a 500m
+  ARRIVING_200M // Morador a 200m
+  ARRIVING_50M  // Morador a 50m
+  ARRIVED     // Morador chegou
+  CANCELLED   // Aviso cancelado
+}
+
+enum TransportType {
+  OWN_VEHICLE   // Veículo próprio cadastrado
+  UBER_TAXI     // Uber, 99, Taxi, etc.
+  ON_FOOT       // A pé
+  OTHER         // Outro
+}
+
+// PIN de segurança do usuário
+model UserPin {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  pin       String   // PIN criptografado (4-6 dígitos)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_pins")
+}
+
+// Veículos do morador
+model Vehicle {
+  id        String   @id @default(uuid())
+  userId    String
+  plate     String   // Placa do veículo
+  model     String   // Modelo (ex: "Honda Civic")
+  color     String?  // Cor do veículo
+  isDefault Boolean  @default(false) // Veículo padrão
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  arrivals  ArrivalNotice[]
+
+  @@map("vehicles")
+}
+
+// Aviso de chegada
+model ArrivalNotice {
+  id            String        @id @default(uuid())
+  userId        String
+  vehicleId     String?
+  condominiumId String
+  status        ArrivalStatus @default(PENDING)
+  
+  // Tipo de transporte
+  transportType TransportType @default(OWN_VEHICLE)
+  
+  // Dados do Uber/Taxi (quando transportType = UBER_TAXI)
+  rideVehiclePlate String?    // Placa do veículo
+  rideVehicleModel String?    // Modelo (ex: "Onix Preto")
+  rideVehicleColor String?    // Cor do veículo
+  rideDriverName   String?    // Nome do motorista (opcional)
+  
+  // Localização
+  latitude      Float?
+  longitude     Float?
+  lastLocationAt DateTime?
+  
+  // Timestamps
+  createdAt     DateTime      @default(now())
+  confirmedAt   DateTime?     // Quando o porteiro confirmou
+  arrivedAt     DateTime?     // Quando o morador chegou
+  cancelledAt   DateTime?
+  
+  // Relacionamentos
+  user          User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle       Vehicle?      @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
+
+  @@map("arrival_notices")
 }
