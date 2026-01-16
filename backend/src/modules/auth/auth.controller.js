@@ -137,6 +137,25 @@ const forgotPassword = async (req, res, next) => {
 };
 
 /**
+ * Verificar token de recuperação de senha
+ */
+const verifyResetToken = async (req, res, next) => {
+  try {
+    const { token } = req.query;
+
+    if (!token) {
+      return res.status(400).json({ error: 'Token é obrigatório' });
+    }
+
+    const result = await authService.verifyResetToken(token);
+
+    res.json({ valid: true, email: result.email });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Resetar senha com token
  */
 const resetPassword = async (req, res, next) => {
@@ -204,6 +223,7 @@ module.exports = {
   logout,
   updatePassword,
   forgotPassword,
+  verifyResetToken,
   resetPassword,
   updatePushToken,
   seedAdmin
