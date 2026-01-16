@@ -149,7 +149,7 @@ export default function Sidebar() {
             <Building2 className="w-5 h-5 text-white" />
           </div>
           <div>
-            <h1 className="font-bold text-white">InterfoneApp</h1>
+            <h1 className="font-bold text-white">App Interfone</h1>
             <p className="text-xs text-slate-500">Painel Admin</p>
           </div>
         </div>

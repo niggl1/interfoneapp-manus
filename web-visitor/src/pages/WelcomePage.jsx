@@ -10,7 +10,7 @@ export default function WelcomePage() {
         </div>
 
         <h1 className="text-3xl font-bold text-white mb-4">
-          InterfoneApp
+          App Interfone
         </h1>
         
         <p className="text-slate-400 mb-12">
@@ -34,7 +34,7 @@ export default function WelcomePage() {
 
         {/* Footer */}
         <p className="text-slate-600 text-sm mt-12">
-          © {new Date().getFullYear()} InterfoneApp. Todos os direitos reservados.
+          © {new Date().getFullYear()} App Interfone. Todos os direitos reservados.
         </p>
       </div>
     </div>

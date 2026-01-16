@@ -36,9 +36,9 @@ const sendPasswordResetEmail = async (email, name, resetToken, resetUrl) => {
   const transporter = createTransporter();
 
   const mailOptions = {
-    from: process.env.SMTP_FROM || '"InterfoneApp" <noreply@interfoneapp.com>',
+    from: process.env.SMTP_FROM || '"App Interfone" <noreply@interfoneapp.com>',
     to: email,
-    subject: 'Recuperação de Senha - InterfoneApp',
+    subject: 'Recuperação de Senha - App Interfone',
     html: `
       <!DOCTYPE html>
       <html>
@@ -55,7 +55,7 @@ const sendPasswordResetEmail = async (email, name, resetToken, resetUrl) => {
                 <!-- Header -->
                 <tr>
                   <td style="padding: 40px 40px 20px 40px; text-align: center; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 8px 8px 0 0;">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">InterfoneApp</h1>
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: bold;">App Interfone</h1>
                     <p style="margin: 10px 0 0 0; color: rgba(255,255,255,0.9); font-size: 14px;">Sistema de Interfone Virtual</p>
                   </td>
                 </tr>
@@ -65,7 +65,7 @@ const sendPasswordResetEmail = async (email, name, resetToken, resetUrl) => {
                   <td style="padding: 40px;">
                     <h2 style="margin: 0 0 20px 0; color: #1e293b; font-size: 22px;">Olá, ${name}!</h2>
                     <p style="margin: 0 0 20px 0; color: #475569; font-size: 16px; line-height: 1.6;">
-                      Recebemos uma solicitação para redefinir a senha da sua conta no InterfoneApp.
+                      Recebemos uma solicitação para redefinir a senha da sua conta no App Interfone.
                     </p>
                     <p style="margin: 0 0 30px 0; color: #475569; font-size: 16px; line-height: 1.6;">
                       Clique no botão abaixo para criar uma nova senha:
@@ -106,7 +106,7 @@ const sendPasswordResetEmail = async (email, name, resetToken, resetUrl) => {
                 <tr>
                   <td style="padding: 30px 40px; background-color: #f8fafc; border-radius: 0 0 8px 8px; text-align: center;">
                     <p style="margin: 0; color: #94a3b8; font-size: 13px;">
-                      © ${new Date().getFullYear()} InterfoneApp. Todos os direitos reservados.
+                      © ${new Date().getFullYear()} App Interfone. Todos os direitos reservados.
                     </p>
                     <p style="margin: 10px 0 0 0; color: #94a3b8; font-size: 12px;">
                       Este é um email automático. Por favor, não responda.
@@ -123,7 +123,7 @@ const sendPasswordResetEmail = async (email, name, resetToken, resetUrl) => {
     text: `
       Olá, ${name}!
       
-      Recebemos uma solicitação para redefinir a senha da sua conta no InterfoneApp.
+      Recebemos uma solicitação para redefinir a senha da sua conta no App Interfone.
       
       Acesse o link abaixo para criar uma nova senha:
       ${resetUrl}
@@ -132,7 +132,7 @@ const sendPasswordResetEmail = async (email, name, resetToken, resetUrl) => {
       
       Se você não solicitou a redefinição de senha, ignore este email.
       
-      InterfoneApp - Sistema de Interfone Virtual
+      App Interfone - Sistema de Interfone Virtual
     `
   };
 
@@ -163,15 +163,15 @@ const sendWelcomeEmail = async (email, name) => {
   const transporter = createTransporter();
 
   const mailOptions = {
-    from: process.env.SMTP_FROM || '"InterfoneApp" <noreply@interfoneapp.com>',
+    from: process.env.SMTP_FROM || '"App Interfone" <noreply@interfoneapp.com>',
     to: email,
-    subject: 'Bem-vindo ao InterfoneApp!',
+    subject: 'Bem-vindo ao App Interfone!',
     html: `
       <!DOCTYPE html>
       <html>
       <head>
         <meta charset="utf-8">
-        <title>Bem-vindo ao InterfoneApp</title>
+        <title>Bem-vindo ao App Interfone</title>
       </head>
       <body style="margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f4f4f4;">
         <table role="presentation" style="width: 100%; border-collapse: collapse;">
@@ -180,14 +180,14 @@ const sendWelcomeEmail = async (email, name) => {
               <table role="presentation" style="width: 600px; border-collapse: collapse; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
                 <tr>
                   <td style="padding: 40px; text-align: center; background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%); border-radius: 8px 8px 0 0;">
-                    <h1 style="margin: 0; color: #ffffff; font-size: 28px;">InterfoneApp</h1>
+                    <h1 style="margin: 0; color: #ffffff; font-size: 28px;">App Interfone</h1>
                   </td>
                 </tr>
                 <tr>
                   <td style="padding: 40px;">
                     <h2 style="margin: 0 0 20px 0; color: #1e293b;">Bem-vindo, ${name}!</h2>
                     <p style="color: #475569; font-size: 16px; line-height: 1.6;">
-                      Sua conta foi criada com sucesso. Agora você pode acessar o InterfoneApp e aproveitar todos os recursos.
+                      Sua conta foi criada com sucesso. Agora você pode acessar o App Interfone e aproveitar todos os recursos.
                     </p>
                     <p style="color: #475569; font-size: 16px; line-height: 1.6;">
                       Sua conta está aguardando aprovação do administrador. Você será notificado quando sua conta for ativada.
@@ -197,7 +197,7 @@ const sendWelcomeEmail = async (email, name) => {
                 <tr>
                   <td style="padding: 30px 40px; background-color: #f8fafc; border-radius: 0 0 8px 8px; text-align: center;">
                     <p style="margin: 0; color: #94a3b8; font-size: 13px;">
-                      © ${new Date().getFullYear()} InterfoneApp. Todos os direitos reservados.
+                      © ${new Date().getFullYear()} App Interfone. Todos os direitos reservados.
                     </p>
                   </td>
                 </tr>

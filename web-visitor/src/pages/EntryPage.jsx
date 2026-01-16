@@ -387,7 +387,7 @@ export default function EntryPage() {
 
         {/* Footer */}
         <p className="text-center text-slate-500 text-sm mt-6 pb-6">
-          InterfoneApp © {new Date().getFullYear()}
+          App Interfone © {new Date().getFullYear()}
         </p>
       </div>
 

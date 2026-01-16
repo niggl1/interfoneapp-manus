@@ -148,7 +148,7 @@ async function main() {
   // Criar alguns comunicados
   await prisma.announcement.create({
     data: {
-      title: 'Bem-vindos ao InterfoneApp!',
+      title: 'Bem-vindos ao App Interfone!',
       content: 'Este é o novo sistema de interfone virtual do nosso condomínio. Agora você pode receber chamadas de visitantes diretamente no seu celular!',
       condominiumId: condominium.id,
       authorId: admin.id

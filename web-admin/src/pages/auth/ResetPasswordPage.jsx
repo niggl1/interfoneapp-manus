@@ -94,7 +94,7 @@ export default function ResetPasswordPage() {
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mb-4 shadow-lg shadow-blue-500/30">
               <Building2 className="w-8 h-8 text-white" />
             </div>
-            <h1 className="text-2xl font-bold text-white">InterfoneApp</h1>
+            <h1 className="text-2xl font-bold text-white">App Interfone</h1>
           </div>
 
           <div className="bg-white rounded-2xl shadow-xl p-8 text-center">
@@ -158,7 +158,7 @@ export default function ResetPasswordPage() {
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl mb-4 shadow-lg shadow-blue-500/30">
             <Building2 className="w-8 h-8 text-white" />
           </div>
-          <h1 className="text-2xl font-bold text-white">InterfoneApp</h1>
+          <h1 className="text-2xl font-bold text-white">App Interfone</h1>
           <p className="text-slate-400 mt-1">Redefinir senha</p>
         </div>
 
@@ -250,7 +250,7 @@ export default function ResetPasswordPage() {
         </div>
 
         <p className="text-center text-slate-500 text-sm mt-6">
-          InterfoneApp © {new Date().getFullYear()}
+          App Interfone © {new Date().getFullYear()}
         </p>
       </div>
     </div>

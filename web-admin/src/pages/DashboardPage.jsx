@@ -99,7 +99,7 @@ export default function DashboardPage() {
 
         {/* Welcome Card */}
         <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-2xl p-8 text-white">
-          <h2 className="text-2xl font-bold mb-2">Bem-vindo ao InterfoneApp Admin</h2>
+          <h2 className="text-2xl font-bold mb-2">Bem-vindo ao App Interfone Admin</h2>
           <p className="text-blue-100 mb-4">
             Gerencie seu condomínio de forma simples e eficiente. Use o menu lateral para navegar entre as opções.
           </p>
