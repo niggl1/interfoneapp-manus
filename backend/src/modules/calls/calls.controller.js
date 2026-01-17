@@ -17,13 +17,14 @@ const initiateCall = async (req, res) => {
     // Se foi passado QR Code em vez de receiverId, buscar o morador da unidade
     if (!receiverId && unitQrCode) {
       const unitData = await callsService.getUnitByQRCode(unitQrCode);
-      if (!unitData || !unitData.unit) {
+      if (!unitData || !unitData.data) {
         return res.status(404).json({ error: 'Unidade não encontrada' });
       }
       
       // Pegar o primeiro morador da unidade
-      if (unitData.unit.residents && unitData.unit.residents.length > 0) {
-        receiverId = unitData.unit.residents[0].id;
+      const unit = unitData.data;
+      if (unit.residents && unit.residents.length > 0) {
+        receiverId = unit.residents[0].id;
       } else {
         return res.status(404).json({ error: 'Nenhum morador encontrado nesta unidade' });
       }
