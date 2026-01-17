@@ -38,16 +38,16 @@ router.post('/', createInvitationValidation, invitationsController.createInvitat
 // Listar meus convites
 router.get('/my', invitationsController.getMyInvitations);
 
-// Buscar convite por ID
-router.get('/:id', invitationsController.getInvitationById);
-
-// Cancelar convite
-router.delete('/:id', invitationsController.cancelInvitation);
+// Listar todos os convites do condomínio (admin) - DEVE VIR ANTES DE /:id
+router.get('/admin', invitationsController.getAllCondominiumInvitations);
 
 // Listar convites do condomínio (para portaria)
 router.get('/condominium/active', invitationsController.getCondominiumInvitations);
 
-// Listar todos os convites do condomínio (admin)
-router.get('/admin', invitationsController.getAllCondominiumInvitations);
+// Buscar convite por ID - DEVE VIR DEPOIS DAS ROTAS ESPECÍFICAS
+router.get('/:id', invitationsController.getInvitationById);
+
+// Cancelar convite
+router.delete('/:id', invitationsController.cancelInvitation);
 
 module.exports = router;
