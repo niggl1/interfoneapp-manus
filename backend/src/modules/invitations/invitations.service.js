@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const crypto = require('crypto');
+const { notifyInvitationUsed } = require('../notifications/notifications.service');
 const prisma = new PrismaClient();
 
 /**
@@ -253,6 +254,13 @@ const useInvitation = async (code, visitorData = {}) => {
       }
     })
   ]);
+
+  // Enviar notificação push para o morador
+  try {
+    await notifyInvitationUsed(invitation, visitorData.name || invitation.visitorName);
+  } catch (error) {
+    console.error('Erro ao enviar notificação de convite usado:', error);
+  }
 
   return { 
     valid: true, 

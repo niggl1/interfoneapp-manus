@@ -150,6 +150,9 @@ model User {
   
   // Convites criados pelo morador
   invitations   Invitation[]
+  
+  // Notificações
+  notifications Notification[]
 
   @@map("users")
 }
@@ -470,4 +473,33 @@ model InvitationUsage {
   invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
 
   @@map("invitation_usages")
+}
+
+
+// ==================== NOTIFICAÇÕES ====================
+
+enum NotificationType {
+  INVITATION_USED   // Convite foi utilizado
+  CALL_MISSED       // Chamada perdida
+  CALL_RECEIVED     // Chamada recebida
+  ANNOUNCEMENT      // Novo comunicado
+  CHAT_MESSAGE      // Nova mensagem de chat
+  SYSTEM            // Notificação do sistema
+}
+
+// Notificação
+model Notification {
+  id        String           @id @default(uuid())
+  userId    String           // Usuário que recebe a notificação
+  type      NotificationType
+  title     String
+  body      String
+  data      Json?            // Dados adicionais (ex: invitationId, callId)
+  read      Boolean          @default(false)
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+  
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }
