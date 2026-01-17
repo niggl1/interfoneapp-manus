@@ -229,6 +229,36 @@ const getCondominiumInvitations = async (req, res) => {
   }
 };
 
+/**
+ * Listar todos os convites do condomínio (admin - com filtros)
+ */
+const getAllCondominiumInvitations = async (req, res) => {
+  try {
+    const condominiumId = req.user.condominiumId;
+    const { page, limit, status } = req.query;
+
+    if (!condominiumId) {
+      return res.status(400).json({ error: 'Você não está vinculado a um condomínio' });
+    }
+
+    // Apenas admin, manager e janitor podem ver todos os convites
+    if (!['ADMIN', 'MANAGER', 'JANITOR'].includes(req.user.role)) {
+      return res.status(403).json({ error: 'Você não tem permissão para ver os convites do condomínio' });
+    }
+
+    const result = await invitationsService.getAllInvitationsByCondominium(condominiumId, {
+      page: parseInt(page) || 1,
+      limit: parseInt(limit) || 20,
+      status
+    });
+
+    res.json(result);
+  } catch (error) {
+    console.error('[INVITATIONS] Erro ao listar todos os convites:', error);
+    res.status(500).json({ error: 'Erro ao listar convites' });
+  }
+};
+
 module.exports = {
   createInvitation,
   getMyInvitations,
@@ -236,5 +266,6 @@ module.exports = {
   useInvitation,
   cancelInvitation,
   getInvitationById,
-  getCondominiumInvitations
+  getCondominiumInvitations,
+  getAllCondominiumInvitations
 };

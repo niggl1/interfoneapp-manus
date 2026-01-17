@@ -47,4 +47,7 @@ router.delete('/:id', invitationsController.cancelInvitation);
 // Listar convites do condomínio (para portaria)
 router.get('/condominium/active', invitationsController.getCondominiumInvitations);
 
+// Listar todos os convites do condomínio (admin)
+router.get('/admin', invitationsController.getAllCondominiumInvitations);
+
 module.exports = router;

@@ -10,7 +10,8 @@ import {
   ChevronDown,
   Phone,
   Car,
-  Megaphone
+  Megaphone,
+  Ticket
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { useState } from 'react';
@@ -53,6 +54,12 @@ const menuItems = [
     title: 'Chegadas',
     icon: Car,
     path: '/access/arrivals',
+    roles: ['ADMIN', 'MANAGER', 'JANITOR']
+  },
+  {
+    title: 'Convites',
+    icon: Ticket,
+    path: '/invitations',
     roles: ['ADMIN', 'MANAGER', 'JANITOR']
   },
   {

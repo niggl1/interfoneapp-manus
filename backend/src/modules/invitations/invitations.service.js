@@ -384,6 +384,62 @@ const updateExpiredInvitations = async () => {
   return result.count;
 };
 
+/**
+ * Listar todos os convites de um condomínio (admin - com filtros)
+ */
+const getAllInvitationsByCondominium = async (condominiumId, options = {}) => {
+  const { page = 1, limit = 20, status } = options;
+  const skip = (page - 1) * limit;
+
+  const where = { condominiumId };
+  
+  if (status) {
+    where.status = status;
+  }
+
+  const [invitations, total] = await Promise.all([
+    prisma.invitation.findMany({
+      where,
+      include: {
+        host: {
+          select: {
+            id: true,
+            name: true,
+            phone: true,
+            unit: {
+              select: {
+                id: true,
+                number: true,
+                block: {
+                  select: {
+                    id: true,
+                    name: true
+                  }
+                }
+              }
+            }
+          }
+        },
+        usages: true
+      },
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: limit
+    }),
+    prisma.invitation.count({ where })
+  ]);
+
+  return {
+    invitations,
+    pagination: {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit)
+    }
+  };
+};
+
 module.exports = {
   generateInvitationCode,
   createInvitation,
@@ -393,5 +449,6 @@ module.exports = {
   useInvitation,
   cancelInvitation,
   getActiveInvitationsByCondominium,
+  getAllInvitationsByCondominium,
   updateExpiredInvitations
 };
