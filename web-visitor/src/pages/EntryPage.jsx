@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { Building2, Search, Phone, User, Home, Loader2, AlertCircle } from 'lucide-react';
+import { Building2, Search, Phone, User, Home, Loader2, AlertCircle, MessageCircle } from 'lucide-react';
 import { visitorApi } from '../services/api';
 
 export default function EntryPage() {
@@ -20,6 +20,8 @@ export default function EntryPage() {
   const [selectedResident, setSelectedResident] = useState(null);
   const [selectedBlock, setSelectedBlock] = useState(null);
   const [selectedUnit, setSelectedUnit] = useState(null);
+  const [actionType, setActionType] = useState(null); // 'call' or 'chat'
+  const [creatingChat, setCreatingChat] = useState(false);
 
   useEffect(() => {
     if (qrCode) {
@@ -92,8 +94,9 @@ export default function EntryPage() {
     }
   };
 
-  const handleSelectResident = (resident) => {
+  const handleSelectResident = (resident, action = 'call') => {
     setSelectedResident(resident);
+    setActionType(action);
     setShowNameModal(true);
   };
 
@@ -107,6 +110,52 @@ export default function EntryPage() {
         unitInfo: selectedUnit || unitInfo
       }
     });
+  };
+
+  const handleChat = async () => {
+    if (!visitorName.trim()) return;
+    
+    setCreatingChat(true);
+    try {
+      const API_URL = import.meta.env.VITE_API_URL || 'https://interfoneapp-api.onrender.com';
+      const response = await fetch(`${API_URL}/api/v1/chat/visitor`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          visitorName: visitorName.trim(),
+          residentId: selectedResident.id,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Erro ao criar chat');
+      }
+
+      const data = await response.json();
+      
+      navigate(`/chat/${data.chatRoom.id}`, {
+        state: {
+          resident: selectedResident,
+          visitorName: visitorName.trim(),
+          chatRoom: data.chatRoom,
+        }
+      });
+    } catch (err) {
+      console.error('Erro ao criar chat:', err);
+      alert('Erro ao iniciar chat. Tente novamente.');
+    } finally {
+      setCreatingChat(false);
+    }
+  };
+
+  const handleAction = () => {
+    if (actionType === 'chat') {
+      handleChat();
+    } else {
+      handleCall();
+    }
   };
 
   const handleBack = () => {
@@ -339,10 +388,9 @@ export default function EntryPage() {
               </div>
             ) : (
               residents.map((resident) => (
-                <button
+                <div
                   key={resident.id}
-                  onClick={() => handleSelectResident(resident)}
-                  className="w-full flex items-center gap-4 p-4 bg-slate-50 rounded-xl transition-colors active:bg-slate-100"
+                  className="w-full flex items-center gap-4 p-4 bg-slate-50 rounded-xl"
                 >
                   <div className="w-12 h-12 bg-gradient-primary rounded-xl flex items-center justify-center flex-shrink-0">
                     <span className="text-white font-bold text-lg">
@@ -357,10 +405,23 @@ export default function EntryPage() {
                       </p>
                     )}
                   </div>
-                  <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center">
-                    <Phone className="w-5 h-5 text-green-600" />
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleSelectResident(resident, 'chat')}
+                      className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center transition-colors active:bg-blue-200"
+                      title="Enviar mensagem"
+                    >
+                      <MessageCircle className="w-5 h-5 text-blue-600" />
+                    </button>
+                    <button
+                      onClick={() => handleSelectResident(resident, 'call')}
+                      className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center transition-colors active:bg-green-200"
+                      title="Ligar"
+                    >
+                      <Phone className="w-5 h-5 text-green-600" />
+                    </button>
                   </div>
-                </button>
+                </div>
               ))
             )}
           </div>
@@ -399,7 +460,7 @@ export default function EntryPage() {
               Identificação
             </h2>
             <p className="text-slate-600 mb-6">
-              Por favor, informe seu nome para que o morador saiba quem está ligando.
+              Por favor, informe seu nome para que o morador saiba quem {actionType === 'chat' ? 'está enviando mensagem' : 'está ligando'}.
             </p>
             
             <input
@@ -417,17 +478,36 @@ export default function EntryPage() {
                   setShowNameModal(false);
                   setSelectedResident(null);
                   setVisitorName('');
+                  setActionType(null);
                 }}
                 className="flex-1 py-3 px-4 bg-slate-100 text-slate-700 rounded-xl font-medium"
+                disabled={creatingChat}
               >
                 Cancelar
               </button>
               <button
-                onClick={handleCall}
-                disabled={!visitorName.trim()}
-                className="flex-1 py-3 px-4 bg-gradient-primary text-white rounded-xl font-medium disabled:opacity-50"
+                onClick={handleAction}
+                disabled={!visitorName.trim() || creatingChat}
+                className={`flex-1 py-3 px-4 text-white rounded-xl font-medium disabled:opacity-50 flex items-center justify-center gap-2 ${
+                  actionType === 'chat' ? 'bg-blue-600' : 'bg-gradient-primary'
+                }`}
               >
-                Ligar
+                {creatingChat ? (
+                  <>
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    Iniciando...
+                  </>
+                ) : actionType === 'chat' ? (
+                  <>
+                    <MessageCircle className="w-5 h-5" />
+                    Enviar Mensagem
+                  </>
+                ) : (
+                  <>
+                    <Phone className="w-5 h-5" />
+                    Ligar
+                  </>
+                )}
               </button>
             </div>
           </div>

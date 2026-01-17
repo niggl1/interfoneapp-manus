@@ -538,7 +538,14 @@ const sendMessage = async (chatRoomId, senderId, content, type = 'text') => {
  */
 const sendVisitorMessage = async (chatRoomId, content, senderName) => {
   const chatRoom = await prisma.chatRoom.findUnique({
-    where: { id: chatRoomId }
+    where: { id: chatRoomId },
+    include: {
+      members: {
+        select: {
+          userId: true
+        }
+      }
+    }
   });
 
   if (!chatRoom || chatRoom.type !== 'VISITOR') {
@@ -547,11 +554,13 @@ const sendVisitorMessage = async (chatRoomId, content, senderName) => {
     throw error;
   }
 
+  const visitorDisplayName = senderName || chatRoom.visitorName;
+
   const message = await prisma.chatMessage.create({
     data: {
       chatRoomId,
       content,
-      senderName: senderName || chatRoom.visitorName,
+      senderName: visitorDisplayName,
       type: 'text'
     }
   });
@@ -561,6 +570,26 @@ const sendVisitorMessage = async (chatRoomId, content, senderName) => {
     where: { id: chatRoomId },
     data: { updatedAt: new Date() }
   });
+
+  // Enviar notificação push para o morador
+  try {
+    for (const member of chatRoom.members) {
+      await notificationsService.createNotification({
+        userId: member.userId,
+        type: 'CHAT_MESSAGE',
+        title: `Mensagem de ${visitorDisplayName}`,
+        body: content.substring(0, 100),
+        data: {
+          chatRoomId: chatRoomId,
+          messageId: message.id,
+          visitorName: visitorDisplayName,
+          isVisitorChat: true
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Erro ao enviar notificação de mensagem de visitante:', error);
+  }
 
   return message;
 };
