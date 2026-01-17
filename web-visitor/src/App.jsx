@@ -16,7 +16,7 @@ function App() {
         <Route path="/unit/:qrCode" element={<EntryPage />} />
         <Route path="/v/:qrCode" element={<EntryPage />} />
         
-        {//* Tela de chamada */
+        {/* Tela de chamada */}
         <Route path="/call/:residentId" element={<CallPage />} />
         
         {/* Entrada via convite */}
