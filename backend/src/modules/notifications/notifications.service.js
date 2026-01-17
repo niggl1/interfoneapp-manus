@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client';
-import { sendPushNotification } from '../../services/push.service.js';
-import * as settingsService from './notification-settings.service.js';
+const { PrismaClient } = require('@prisma/client');
+const { sendPushNotification } = require('../../services/push.service');
+const settingsService = require('./notification-settings.service');
 
 const prisma = new PrismaClient();
 
@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
  * Cria uma notificação e envia push notification
  * Verifica preferências do usuário antes de enviar
  */
-export async function createNotification({
+async function createNotification({
   userId,
   type,
   title,
@@ -73,7 +73,7 @@ export async function createNotification({
 /**
  * Lista notificações do usuário
  */
-export async function getUserNotifications(userId, { page = 1, limit = 20, unreadOnly = false }) {
+async function getUserNotifications(userId, { page = 1, limit = 20, unreadOnly = false }) {
   const where = {
     userId,
     ...(unreadOnly && { read: false }),
@@ -103,7 +103,7 @@ export async function getUserNotifications(userId, { page = 1, limit = 20, unrea
 /**
  * Conta notificações não lidas
  */
-export async function getUnreadCount(userId) {
+async function getUnreadCount(userId) {
   return prisma.notification.count({
     where: {
       userId,
@@ -115,7 +115,7 @@ export async function getUnreadCount(userId) {
 /**
  * Marca notificação como lida
  */
-export async function markAsRead(notificationId, userId) {
+async function markAsRead(notificationId, userId) {
   const notification = await prisma.notification.findFirst({
     where: {
       id: notificationId,
@@ -139,7 +139,7 @@ export async function markAsRead(notificationId, userId) {
 /**
  * Marca todas as notificações como lidas
  */
-export async function markAllAsRead(userId) {
+async function markAllAsRead(userId) {
   return prisma.notification.updateMany({
     where: {
       userId,
@@ -155,7 +155,7 @@ export async function markAllAsRead(userId) {
 /**
  * Deleta uma notificação
  */
-export async function deleteNotification(notificationId, userId) {
+async function deleteNotification(notificationId, userId) {
   const notification = await prisma.notification.findFirst({
     where: {
       id: notificationId,
@@ -175,7 +175,7 @@ export async function deleteNotification(notificationId, userId) {
 /**
  * Notifica morador quando convite é usado
  */
-export async function notifyInvitationUsed(invitation, visitorName) {
+async function notifyInvitationUsed(invitation, visitorName) {
   return createNotification({
     userId: invitation.hostId,
     type: 'INVITATION_USED',
@@ -192,7 +192,7 @@ export async function notifyInvitationUsed(invitation, visitorName) {
 /**
  * Notifica morador sobre chamada perdida
  */
-export async function notifyMissedCall(call) {
+async function notifyMissedCall(call) {
   return createNotification({
     userId: call.receiverId,
     type: 'CALL_MISSED',
@@ -208,7 +208,7 @@ export async function notifyMissedCall(call) {
 /**
  * Notifica sobre novo comunicado
  */
-export async function notifyAnnouncement(announcement, userIds) {
+async function notifyAnnouncement(announcement, userIds) {
   const notifications = userIds.map((userId) =>
     createNotification({
       userId,
@@ -227,7 +227,7 @@ export async function notifyAnnouncement(announcement, userIds) {
 /**
  * Notifica sobre nova mensagem de chat
  */
-export async function notifyChatMessage(message, recipientIds, senderName) {
+async function notifyChatMessage(message, recipientIds, senderName) {
   const notifications = recipientIds.map((userId) =>
     createNotification({
       userId,
@@ -243,3 +243,16 @@ export async function notifyChatMessage(message, recipientIds, senderName) {
 
   return Promise.all(notifications);
 }
+
+module.exports = {
+  createNotification,
+  getUserNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+  notifyInvitationUsed,
+  notifyMissedCall,
+  notifyAnnouncement,
+  notifyChatMessage,
+};

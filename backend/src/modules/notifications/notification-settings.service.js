@@ -1,9 +1,9 @@
-import { PrismaClient } from '@prisma/client';
+const { PrismaClient } = require('@prisma/client');
 
 const prisma = new PrismaClient();
 
 // Configurações padrão
-export const DEFAULT_SETTINGS = {
+const DEFAULT_SETTINGS = {
   callsReceived: true,
   callsMissed: true,
   chatMessages: true,
@@ -20,7 +20,7 @@ export const DEFAULT_SETTINGS = {
  * Busca as configurações de notificação do usuário
  * Cria configurações padrão se não existirem
  */
-export async function getSettings(userId) {
+async function getSettings(userId) {
   let settings = await prisma.notificationSettings.findUnique({
     where: { userId },
   });
@@ -41,7 +41,7 @@ export async function getSettings(userId) {
 /**
  * Atualiza as configurações de notificação do usuário
  */
-export async function updateSettings(userId, data) {
+async function updateSettings(userId, data) {
   // Verifica se já existe
   const existing = await prisma.notificationSettings.findUnique({
     where: { userId },
@@ -68,7 +68,7 @@ export async function updateSettings(userId, data) {
 /**
  * Verifica se o usuário deve receber notificação de um determinado tipo
  */
-export async function shouldNotify(userId, notificationType) {
+async function shouldNotify(userId, notificationType) {
   const settings = await getSettings(userId);
 
   // Verifica modo silencioso
@@ -111,3 +111,10 @@ export async function shouldNotify(userId, notificationType) {
       return true;
   }
 }
+
+module.exports = {
+  getSettings,
+  updateSettings,
+  shouldNotify,
+  DEFAULT_SETTINGS,
+};

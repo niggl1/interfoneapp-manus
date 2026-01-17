@@ -1,8 +1,8 @@
-import { Router } from 'express';
-import { authenticate } from '../../middlewares/auth.js';
-import * as notificationsController from './notifications.controller.js';
+const express = require('express');
+const { authenticate } = require('../../middlewares/auth');
+const notificationsController = require('./notifications.controller');
 
-const router = Router();
+const router = express.Router();
 
 // Todas as rotas requerem autenticação
 router.use(authenticate);
@@ -26,4 +26,4 @@ router.delete('/:id', notificationsController.deleteNotification);
 router.get('/settings', notificationsController.getSettings);
 router.put('/settings', notificationsController.updateSettings);
 
-export default router;
+module.exports = router;

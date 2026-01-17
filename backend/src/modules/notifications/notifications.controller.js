@@ -1,10 +1,10 @@
-import * as notificationsService from './notifications.service.js';
-import * as settingsService from './notification-settings.service.js';
+const notificationsService = require('./notifications.service');
+const settingsService = require('./notification-settings.service');
 
 /**
  * Lista notificações do usuário
  */
-export async function getNotifications(req, res) {
+async function getNotifications(req, res) {
   try {
     const { page = 1, limit = 20, unreadOnly = false } = req.query;
     
@@ -24,7 +24,7 @@ export async function getNotifications(req, res) {
 /**
  * Conta notificações não lidas
  */
-export async function getUnreadCount(req, res) {
+async function getUnreadCount(req, res) {
   try {
     const count = await notificationsService.getUnreadCount(req.user.id);
     res.json({ count });
@@ -37,7 +37,7 @@ export async function getUnreadCount(req, res) {
 /**
  * Marca notificação como lida
  */
-export async function markAsRead(req, res) {
+async function markAsRead(req, res) {
   try {
     const { id } = req.params;
     
@@ -55,7 +55,7 @@ export async function markAsRead(req, res) {
 /**
  * Marca todas as notificações como lidas
  */
-export async function markAllAsRead(req, res) {
+async function markAllAsRead(req, res) {
   try {
     await notificationsService.markAllAsRead(req.user.id);
     res.json({ message: 'Todas as notificações foram marcadas como lidas' });
@@ -68,7 +68,7 @@ export async function markAllAsRead(req, res) {
 /**
  * Deleta uma notificação
  */
-export async function deleteNotification(req, res) {
+async function deleteNotification(req, res) {
   try {
     const { id } = req.params;
     
@@ -86,7 +86,7 @@ export async function deleteNotification(req, res) {
 /**
  * Busca configurações de notificação do usuário
  */
-export async function getSettings(req, res) {
+async function getSettings(req, res) {
   try {
     const settings = await settingsService.getSettings(req.user.id);
     res.json(settings);
@@ -99,7 +99,7 @@ export async function getSettings(req, res) {
 /**
  * Atualiza configurações de notificação do usuário
  */
-export async function updateSettings(req, res) {
+async function updateSettings(req, res) {
   try {
     const {
       callsReceived,
@@ -133,3 +133,13 @@ export async function updateSettings(req, res) {
     res.status(500).json({ error: 'Erro ao atualizar configurações de notificação' });
   }
 }
+
+module.exports = {
+  getNotifications,
+  getUnreadCount,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+  getSettings,
+  updateSettings,
+};
