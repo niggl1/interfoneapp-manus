@@ -259,6 +259,23 @@ const getAllCondominiumInvitations = async (req, res) => {
   }
 };
 
+/**
+ * Histórico de visitantes (convites utilizados pelo morador)
+ */
+const getVisitorsHistory = async (req, res) => {
+  try {
+    const hostId = req.user.id;
+    const { filter } = req.query; // all, today, week, month
+
+    const result = await invitationsService.getVisitorsHistory(hostId, filter);
+
+    res.json(result);
+  } catch (error) {
+    console.error('[INVITATIONS] Erro ao buscar histórico de visitantes:', error);
+    res.status(500).json({ error: 'Erro ao buscar histórico de visitantes' });
+  }
+};
+
 module.exports = {
   createInvitation,
   getMyInvitations,
@@ -267,5 +284,6 @@ module.exports = {
   cancelInvitation,
   getInvitationById,
   getCondominiumInvitations,
-  getAllCondominiumInvitations
+  getAllCondominiumInvitations,
+  getVisitorsHistory
 };

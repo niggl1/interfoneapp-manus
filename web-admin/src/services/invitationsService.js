@@ -2,9 +2,11 @@ import api from './api';
 
 const invitationsService = {
   // Buscar todos os convites do condomínio (admin)
-  getAllInvitations: async (page = 1, limit = 20, status = undefined) => {
+  getAllInvitations: async (page = 1, limit = 20, status = undefined, startDate = null, endDate = null) => {
     const params = { page, limit };
     if (status) params.status = status;
+    if (startDate) params.startDate = startDate.toISOString();
+    if (endDate) params.endDate = endDate.toISOString();
     const response = await api.get('/invitations/admin', { params });
     return response.data;
   },

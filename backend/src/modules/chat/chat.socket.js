@@ -145,14 +145,28 @@ const setupChatSocket = (io) => {
       if (!socket.userId) return;
 
       try {
+        const now = new Date();
+        
+        // Atualizar lastReadAt do membro
         await prisma.chatRoomMember.updateMany({
           where: { chatRoomId, userId: socket.userId },
-          data: { lastReadAt: new Date() }
+          data: { lastReadAt: now }
+        });
+        
+        // Atualizar status das mensagens não lidas para READ
+        await prisma.chatMessage.updateMany({
+          where: {
+            chatRoomId,
+            senderId: { not: socket.userId },
+            status: { not: 'READ' }
+          },
+          data: { status: 'READ' }
         });
 
         socket.to(`chat:${chatRoomId}`).emit('messages_read', {
           userId: socket.userId,
-          chatRoomId
+          chatRoomId,
+          readAt: now.toISOString()
         });
       } catch (error) {
         console.error('[Chat] Erro ao marcar como lido:', error);

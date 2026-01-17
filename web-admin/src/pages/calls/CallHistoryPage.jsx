@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Clock, User, Video, Mic, Calendar, Download, FileText, FileSpreadsheet } from 'lucide-react';
+import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Clock, User, Video, Mic, Calendar, Download, FileText, FileSpreadsheet, Filter } from 'lucide-react';
 import callsService from '../../services/callsService';
 import { useCall } from '../../context/CallContext';
 import { exportToCSV, exportToPDF, formatDate as formatDateUtil, formatCallStatus } from '../../utils/exportUtils';
@@ -11,17 +11,52 @@ export default function CallHistoryPage() {
   const [loading, setLoading] = useState(true);
   const [exporting, setExporting] = useState(false);
   const [filter, setFilter] = useState('all'); // all, made, received, missed
+  const [dateFilter, setDateFilter] = useState('all'); // all, today, week, month, custom
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
 
   useEffect(() => {
     fetchCalls();
-  }, [filter, pagination.page]);
+  }, [filter, dateFilter, startDate, endDate, pagination.page]);
+
+  const getDateRange = () => {
+    const now = new Date();
+    let start = null;
+    let end = null;
+
+    switch (dateFilter) {
+      case 'today':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        break;
+      case 'week':
+        start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        end = now;
+        break;
+      case 'month':
+        start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        end = now;
+        break;
+      case 'custom':
+        if (startDate) start = new Date(startDate);
+        if (endDate) end = new Date(endDate + 'T23:59:59');
+        break;
+      default:
+        break;
+    }
+
+    return { start, end };
+  };
 
   const fetchCalls = async () => {
     setLoading(true);
     try {
       const type = filter === 'all' ? null : filter;
-      const data = await callsService.getCallHistory(pagination.page, 20, type);
+      const { start, end } = getDateRange();
+      
+      const data = await callsService.getCallHistory(pagination.page, 20, type, start, end);
       setCalls(data.calls || []);
       setPagination(prev => ({
         ...prev,
@@ -40,7 +75,8 @@ export default function CallHistoryPage() {
     setExporting(true);
     try {
       const type = filter === 'all' ? null : filter;
-      const data = await callsService.getCallHistory(1, 1000, type);
+      const { start, end } = getDateRange();
+      const data = await callsService.getCallHistory(1, 1000, type, start, end);
       return data.calls || [];
     } catch (error) {
       console.error('Erro ao buscar dados para exportação:', error);
@@ -95,6 +131,18 @@ export default function CallHistoryPage() {
     }));
 
     exportToPDF(formattedData, columns, 'Relatório de Chamadas', `chamadas_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  const handleDateFilterChange = (value) => {
+    setDateFilter(value);
+    if (value !== 'custom') {
+      setStartDate('');
+      setEndDate('');
+      setShowDatePicker(false);
+    } else {
+      setShowDatePicker(true);
+    }
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const getCallIcon = (call) => {
@@ -201,29 +249,101 @@ export default function CallHistoryPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex gap-2 mb-6">
-        {[
-          { value: 'all', label: 'Todas' },
-          { value: 'received', label: 'Recebidas' },
-          { value: 'made', label: 'Realizadas' },
-          { value: 'missed', label: 'Perdidas' }
-        ].map(({ value, label }) => (
-          <button
-            key={value}
-            onClick={() => {
-              setFilter(value);
-              setPagination(prev => ({ ...prev, page: 1 }));
-            }}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              filter === value
-                ? 'bg-blue-500 text-white'
-                : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
-            }`}
+      <div className="flex flex-wrap gap-4 mb-6">
+        {/* Status Filter */}
+        <div className="flex gap-2">
+          {[
+            { value: 'all', label: 'Todas' },
+            { value: 'received', label: 'Recebidas' },
+            { value: 'made', label: 'Realizadas' },
+            { value: 'missed', label: 'Perdidas' }
+          ].map(({ value, label }) => (
+            <button
+              key={value}
+              onClick={() => {
+                setFilter(value);
+                setPagination(prev => ({ ...prev, page: 1 }));
+              }}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                filter === value
+                  ? 'bg-blue-500 text-white'
+                  : 'bg-white text-slate-600 hover:bg-slate-50 border border-slate-200'
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+
+        {/* Date Filter */}
+        <div className="flex items-center gap-2">
+          <Filter className="w-4 h-4 text-slate-400" />
+          <select
+            value={dateFilter}
+            onChange={(e) => handleDateFilterChange(e.target.value)}
+            className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
           >
-            {label}
-          </button>
-        ))}
+            <option value="all">Todo período</option>
+            <option value="today">Hoje</option>
+            <option value="week">Última semana</option>
+            <option value="month">Último mês</option>
+            <option value="custom">Período personalizado</option>
+          </select>
+        </div>
+
+        {/* Custom Date Range */}
+        {showDatePicker && (
+          <div className="flex items-center gap-2">
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Data inicial"
+            />
+            <span className="text-slate-400">até</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Data final"
+            />
+          </div>
+        )}
       </div>
+
+      {/* Active Filters Badge */}
+      {(dateFilter !== 'all' || filter !== 'all') && (
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-sm text-slate-500">Filtros ativos:</span>
+          {filter !== 'all' && (
+            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+              {filter === 'received' ? 'Recebidas' : filter === 'made' ? 'Realizadas' : 'Perdidas'}
+            </span>
+          )}
+          {dateFilter !== 'all' && (
+            <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+              {dateFilter === 'today' ? 'Hoje' : 
+               dateFilter === 'week' ? 'Última semana' : 
+               dateFilter === 'month' ? 'Último mês' : 
+               `${startDate || '...'} - ${endDate || '...'}`}
+            </span>
+          )}
+          <button
+            onClick={() => {
+              setFilter('all');
+              setDateFilter('all');
+              setStartDate('');
+              setEndDate('');
+              setShowDatePicker(false);
+            }}
+            className="text-xs text-slate-500 hover:text-slate-700 underline"
+          >
+            Limpar filtros
+          </button>
+        </div>
+      )}
 
       {/* Call List */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">

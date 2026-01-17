@@ -440,6 +440,75 @@ const getAllInvitationsByCondominium = async (condominiumId, options = {}) => {
   };
 };
 
+/**
+ * Obter histórico de visitantes (convites utilizados pelo morador)
+ */
+const getVisitorsHistory = async (hostId, filter = 'all') => {
+  // Calcular data de início baseado no filtro
+  let startDate = null;
+  const now = new Date();
+  
+  switch (filter) {
+    case 'today':
+      startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      break;
+    case 'week':
+      startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+      break;
+    case 'month':
+      startDate = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+      break;
+    default:
+      startDate = null;
+  }
+
+  const whereClause = {
+    invitation: {
+      hostId
+    },
+    ...(startDate && { usedAt: { gte: startDate } })
+  };
+
+  const usages = await prisma.invitationUsage.findMany({
+    where: whereClause,
+    include: {
+      invitation: {
+        select: {
+          code: true,
+          visitorName: true,
+          host: {
+            select: {
+              name: true,
+              unit: {
+                select: {
+                  number: true,
+                  block: {
+                    select: { name: true }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    orderBy: { usedAt: 'desc' }
+  });
+
+  // Formatar dados para o frontend
+  const visitors = usages.map(usage => ({
+    id: usage.id,
+    visitorName: usage.visitorName || usage.invitation.visitorName,
+    visitorPhone: usage.visitorPhone,
+    usedAt: usage.usedAt.toISOString(),
+    invitationCode: usage.invitation.code,
+    hostName: usage.invitation.host.name,
+    unitNumber: usage.invitation.host.unit?.number || '-'
+  }));
+
+  return { visitors };
+};
+
 module.exports = {
   generateInvitationCode,
   createInvitation,
@@ -450,5 +519,6 @@ module.exports = {
   cancelInvitation,
   getActiveInvitationsByCondominium,
   getAllInvitationsByCondominium,
-  updateExpiredInvitations
+  updateExpiredInvitations,
+  getVisitorsHistory
 };

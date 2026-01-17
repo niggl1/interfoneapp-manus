@@ -38,6 +38,9 @@ router.post('/', createInvitationValidation, invitationsController.createInvitat
 // Listar meus convites
 router.get('/my', invitationsController.getMyInvitations);
 
+// Histórico de visitantes (convites utilizados)
+router.get('/history', invitationsController.getVisitorsHistory);
+
 // Listar todos os convites do condomínio (admin) - DEVE VIR ANTES DE /:id
 router.get('/admin', invitationsController.getAllCondominiumInvitations);
 

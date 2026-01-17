@@ -12,17 +12,57 @@ export default function InvitationsPage() {
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [filter, setFilter] = useState('all'); // all, active, used, expired, cancelled
+  const [dateFilter, setDateFilter] = useState('all'); // all, today, week, month, custom
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetchInvitations();
-  }, [pagination.page, filter]);
+  }, [pagination.page, filter, dateFilter, startDate, endDate]);
+
+  const getDateRange = () => {
+    const now = new Date();
+    let start = null;
+    let end = null;
+
+    switch (dateFilter) {
+      case 'today':
+        start = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        end = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 23, 59, 59);
+        break;
+      case 'week':
+        start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        end = now;
+        break;
+      case 'month':
+        start = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
+        end = now;
+        break;
+      case 'custom':
+        if (startDate) start = new Date(startDate);
+        if (endDate) end = new Date(endDate + 'T23:59:59');
+        break;
+      default:
+        break;
+    }
+
+    return { start, end };
+  };
 
   const fetchInvitations = async () => {
     setLoading(true);
     setError(null);
     try {
-      const data = await invitationsService.getAllInvitations(pagination.page, 20, filter !== 'all' ? filter : undefined);
+      const { start, end } = getDateRange();
+      const data = await invitationsService.getAllInvitations(
+        pagination.page, 
+        20, 
+        filter !== 'all' ? filter : undefined,
+        start,
+        end
+      );
       setInvitations(data.invitations || []);
       setPagination(prev => ({
         ...prev,
@@ -48,7 +88,14 @@ export default function InvitationsPage() {
   const fetchAllForExport = async () => {
     setExporting(true);
     try {
-      const data = await invitationsService.getAllInvitations(1, 1000, filter !== 'all' ? filter : undefined);
+      const { start, end } = getDateRange();
+      const data = await invitationsService.getAllInvitations(
+        1, 
+        1000, 
+        filter !== 'all' ? filter : undefined,
+        start,
+        end
+      );
       return data.invitations || [];
     } catch (error) {
       console.error('Erro ao buscar dados para exportação:', error);
@@ -119,6 +166,18 @@ export default function InvitationsPage() {
       console.error('Erro ao cancelar convite:', error);
       alert(error.response?.data?.error || 'Erro ao cancelar convite');
     }
+  };
+
+  const handleDateFilterChange = (value) => {
+    setDateFilter(value);
+    if (value !== 'custom') {
+      setStartDate('');
+      setEndDate('');
+      setShowDatePicker(false);
+    } else {
+      setShowDatePicker(true);
+    }
+    setPagination(prev => ({ ...prev, page: 1 }));
   };
 
   const formatDate = (dateString) => {
@@ -251,7 +310,7 @@ export default function InvitationsPage() {
 
       {/* Filters */}
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-4 mb-6">
-        <div className="flex flex-col sm:flex-row gap-4">
+        <div className="flex flex-col lg:flex-row gap-4">
           {/* Search */}
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
@@ -264,7 +323,7 @@ export default function InvitationsPage() {
             />
           </div>
           
-          {/* Filter */}
+          {/* Status Filter */}
           <div className="flex items-center gap-2">
             <Filter className="w-5 h-5 text-slate-400" />
             <select
@@ -282,8 +341,80 @@ export default function InvitationsPage() {
               <option value="CANCELLED">Cancelados</option>
             </select>
           </div>
+
+          {/* Date Filter */}
+          <div className="flex items-center gap-2">
+            <Calendar className="w-5 h-5 text-slate-400" />
+            <select
+              value={dateFilter}
+              onChange={(e) => handleDateFilterChange(e.target.value)}
+              className="px-3 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            >
+              <option value="all">Todo período</option>
+              <option value="today">Hoje</option>
+              <option value="week">Última semana</option>
+              <option value="month">Último mês</option>
+              <option value="custom">Período personalizado</option>
+            </select>
+          </div>
         </div>
+
+        {/* Custom Date Range */}
+        {showDatePicker && (
+          <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200">
+            <span className="text-sm text-slate-500">Período:</span>
+            <input
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Data inicial"
+            />
+            <span className="text-slate-400">até</span>
+            <input
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="px-3 py-2 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Data final"
+            />
+          </div>
+        )}
       </div>
+
+      {/* Active Filters Badge */}
+      {(dateFilter !== 'all' || filter !== 'all') && (
+        <div className="flex items-center gap-2 mb-4">
+          <span className="text-sm text-slate-500">Filtros ativos:</span>
+          {filter !== 'all' && (
+            <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full">
+              {filter === 'ACTIVE' ? 'Ativos' : 
+               filter === 'USED' ? 'Utilizados' : 
+               filter === 'EXPIRED' ? 'Expirados' : 'Cancelados'}
+            </span>
+          )}
+          {dateFilter !== 'all' && (
+            <span className="px-2 py-1 bg-purple-100 text-purple-700 text-xs rounded-full">
+              {dateFilter === 'today' ? 'Hoje' : 
+               dateFilter === 'week' ? 'Última semana' : 
+               dateFilter === 'month' ? 'Último mês' : 
+               `${startDate || '...'} - ${endDate || '...'}`}
+            </span>
+          )}
+          <button
+            onClick={() => {
+              setFilter('all');
+              setDateFilter('all');
+              setStartDate('');
+              setEndDate('');
+              setShowDatePicker(false);
+            }}
+            className="text-xs text-slate-500 hover:text-slate-700 underline"
+          >
+            Limpar filtros
+          </button>
+        </div>
+      )}
 
       {/* Error State */}
       {error && (

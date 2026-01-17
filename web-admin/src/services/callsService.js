@@ -8,9 +8,11 @@ const callsService = {
   },
 
   // Buscar histórico de chamadas
-  getCallHistory: async (page = 1, limit = 20, type = null) => {
+  getCallHistory: async (page = 1, limit = 20, type = null, startDate = null, endDate = null) => {
     const params = { page, limit };
     if (type) params.type = type;
+    if (startDate) params.startDate = startDate.toISOString();
+    if (endDate) params.endDate = endDate.toISOString();
     const response = await api.get('/calls/history', { params });
     return response.data;
   },

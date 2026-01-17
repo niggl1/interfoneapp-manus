@@ -448,7 +448,32 @@ const getMessages = async (chatRoomId, userId, options = {}) => {
     }
   });
 
-  return messages.reverse();
+  // Buscar lastReadAt dos outros membros para mostrar confirmação de leitura
+  const otherMembers = await prisma.chatRoomMember.findMany({
+    where: {
+      chatRoomId,
+      userId: { not: userId }
+    },
+    select: {
+      userId: true,
+      lastReadAt: true,
+      user: {
+        select: { name: true }
+      }
+    }
+  });
+
+  // Pegar o lastReadAt mais recente dos outros membros
+  const lastReadAt = otherMembers.reduce((latest, member) => {
+    if (!member.lastReadAt) return latest;
+    if (!latest) return member.lastReadAt;
+    return new Date(member.lastReadAt) > new Date(latest) ? member.lastReadAt : latest;
+  }, null);
+
+  return {
+    messages: messages.reverse(),
+    lastReadAt: lastReadAt ? lastReadAt.toISOString() : null
+  };
 };
 
 /**

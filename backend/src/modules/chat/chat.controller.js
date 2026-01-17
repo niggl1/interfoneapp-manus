@@ -71,12 +71,16 @@ const getMessages = async (req, res, next) => {
     const { chatRoomId } = req.params;
     const { limit = 50, before } = req.query;
     
-    const messages = await chatService.getMessages(chatRoomId, req.user.id, {
+    const result = await chatService.getMessages(chatRoomId, req.user.id, {
       limit: parseInt(limit),
       before
     });
     
-    res.json({ messages });
+    // Retornar messages e lastReadAt para confirmação de leitura
+    res.json({ 
+      messages: result.messages,
+      lastReadAt: result.lastReadAt
+    });
   } catch (error) {
     next(error);
   }
