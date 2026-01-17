@@ -1,4 +1,5 @@
 import * as notificationsService from './notifications.service.js';
+import * as settingsService from './notification-settings.service.js';
 
 /**
  * Lista notificações do usuário
@@ -79,5 +80,56 @@ export async function deleteNotification(req, res) {
       return res.status(404).json({ error: error.message });
     }
     res.status(500).json({ error: 'Erro ao excluir notificação' });
+  }
+}
+
+/**
+ * Busca configurações de notificação do usuário
+ */
+export async function getSettings(req, res) {
+  try {
+    const settings = await settingsService.getSettings(req.user.id);
+    res.json(settings);
+  } catch (error) {
+    console.error('Erro ao buscar configurações:', error);
+    res.status(500).json({ error: 'Erro ao buscar configurações de notificação' });
+  }
+}
+
+/**
+ * Atualiza configurações de notificação do usuário
+ */
+export async function updateSettings(req, res) {
+  try {
+    const {
+      callsReceived,
+      callsMissed,
+      chatMessages,
+      invitationsUsed,
+      announcements,
+      soundEnabled,
+      vibrationEnabled,
+      quietHoursEnabled,
+      quietHoursStart,
+      quietHoursEnd,
+    } = req.body;
+
+    const settings = await settingsService.updateSettings(req.user.id, {
+      callsReceived,
+      callsMissed,
+      chatMessages,
+      invitationsUsed,
+      announcements,
+      soundEnabled,
+      vibrationEnabled,
+      quietHoursEnabled,
+      quietHoursStart,
+      quietHoursEnd,
+    });
+
+    res.json({ message: 'Configurações atualizadas com sucesso', settings });
+  } catch (error) {
+    console.error('Erro ao atualizar configurações:', error);
+    res.status(500).json({ error: 'Erro ao atualizar configurações de notificação' });
   }
 }

@@ -22,4 +22,8 @@ router.put('/:id/read', notificationsController.markAsRead);
 // Excluir notificação
 router.delete('/:id', notificationsController.deleteNotification);
 
+// Configurações de notificação
+router.get('/settings', notificationsController.getSettings);
+router.put('/settings', notificationsController.updateSettings);
+
 export default router;

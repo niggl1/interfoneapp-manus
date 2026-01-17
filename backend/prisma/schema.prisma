@@ -153,6 +153,9 @@ model User {
   
   // Notificações
   notifications Notification[]
+  
+  // Configurações de notificação
+  notificationSettings NotificationSettings?
 
   @@map("users")
 }
@@ -502,4 +505,36 @@ model Notification {
   user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
+}
+
+
+// ==================== CONFIGURAÇÕES DE NOTIFICAÇÕES ====================
+
+// Preferências de notificação do usuário
+model NotificationSettings {
+  id                    String   @id @default(uuid())
+  userId                String   @unique
+  
+  // Tipos de notificação
+  callsReceived         Boolean  @default(true)  // Chamadas recebidas
+  callsMissed           Boolean  @default(true)  // Chamadas perdidas
+  chatMessages          Boolean  @default(true)  // Novas mensagens no chat
+  invitationsUsed       Boolean  @default(true)  // Convites utilizados
+  announcements         Boolean  @default(true)  // Comunicados do condomínio
+  
+  // Configurações gerais
+  soundEnabled          Boolean  @default(true)  // Som das notificações
+  vibrationEnabled      Boolean  @default(true)  // Vibração
+  
+  // Modo silencioso por horário
+  quietHoursEnabled     Boolean  @default(false)
+  quietHoursStart       String?  // Horário de início (ex: "22:00")
+  quietHoursEnd         String?  // Horário de fim (ex: "07:00")
+  
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+  
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notification_settings")
 }

@@ -1,10 +1,12 @@
 import { PrismaClient } from '@prisma/client';
 import { sendPushNotification } from '../../services/push.service.js';
+import * as settingsService from './notification-settings.service.js';
 
 const prisma = new PrismaClient();
 
 /**
  * Cria uma notificação e envia push notification
+ * Verifica preferências do usuário antes de enviar
  */
 export async function createNotification({
   userId,
@@ -13,7 +15,17 @@ export async function createNotification({
   body,
   data = null,
   sendPush = true,
+  checkPreferences = true,
 }) {
+  // Verifica preferências do usuário
+  if (checkPreferences) {
+    const shouldNotify = await settingsService.shouldNotify(userId, type);
+    if (!shouldNotify) {
+      console.log(`Notificação ${type} bloqueada pelas preferências do usuário ${userId}`);
+      return null;
+    }
+  }
+
   // Criar notificação no banco
   const notification = await prisma.notification.create({
     data: {
@@ -33,6 +45,9 @@ export async function createNotification({
     });
 
     if (user?.pushToken) {
+      // Busca configurações para verificar som e vibração
+      const settings = await settingsService.getSettings(userId);
+      
       try {
         await sendPushNotification({
           token: user.pushToken,
@@ -43,6 +58,8 @@ export async function createNotification({
             type,
             ...data,
           },
+          sound: settings.soundEnabled,
+          vibrate: settings.vibrationEnabled,
         });
       } catch (error) {
         console.error('Erro ao enviar push notification:', error);
