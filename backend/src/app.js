@@ -14,6 +14,7 @@ const communicationRoutes = require('./modules/communication/communication.route
 const arrivalRoutes = require('./modules/arrival/arrival.routes');
 const accessRoutes = require('./modules/access/access.routes');
 const chatRoutes = require('./modules/chat/chat.routes');
+const invitationsRoutes = require('./modules/invitations/invitations.routes');
 
 // Importar middlewares
 const errorHandler = require('./middlewares/errorHandler');
@@ -75,6 +76,7 @@ app.use('/api/v1/communication', communicationRoutes);
 app.use('/api/v1/arrival', arrivalRoutes);
 app.use('/api/v1/access', accessRoutes);
 app.use('/api/v1/chat', chatRoutes);
+app.use('/api/v1/invitations', invitationsRoutes);
 
 // Rota de health check
 app.get('/api/v1/health', (req, res) => {
@@ -109,6 +111,7 @@ server.listen(PORT, () => {
   console.log(`📡 WebSocket disponível`);
   console.log(`📞 Sistema de chamadas WebRTC ativo`);
   console.log(`💬 Sistema de chat ativo`);
+  console.log(`🎟️  Sistema de convites ativo`);
   console.log(`🔗 Health check: http://localhost:${PORT}/api/v1/health`);
 });
 

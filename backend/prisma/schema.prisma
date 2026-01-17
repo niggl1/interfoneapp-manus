@@ -147,6 +147,9 @@ model User {
   pin           UserPin?
   vehicles      Vehicle[]
   arrivalNotices ArrivalNotice[]
+  
+  // Convites criados pelo morador
+  invitations   Invitation[]
 
   @@map("users")
 }
@@ -404,4 +407,67 @@ model ArrivalNotice {
   vehicle       Vehicle?      @relation(fields: [vehicleId], references: [id], onDelete: SetNull)
 
   @@map("arrival_notices")
+}
+
+
+// ==================== CONVITES ====================
+
+enum InvitationStatus {
+  ACTIVE      // Convite ativo
+  USED        // Convite já utilizado
+  EXPIRED     // Convite expirado
+  CANCELLED   // Convite cancelado pelo morador
+}
+
+// Convite para visitante
+model Invitation {
+  id            String           @id @default(uuid())
+  code          String           @unique // Código único do convite (ex: INV-XXXXXX)
+  hostId        String           // Morador que criou o convite
+  unitId        String           // Unidade do morador
+  condominiumId String           // Condomínio
+  
+  // Dados do visitante esperado
+  visitorName   String           // Nome do visitante
+  visitorPhone  String?          // Telefone do visitante (opcional)
+  visitorEmail  String?          // Email do visitante (opcional)
+  
+  // Configurações do convite
+  validFrom     DateTime         @default(now()) // Início da validade
+  validUntil    DateTime         // Fim da validade
+  maxUses       Int              @default(1) // Número máximo de usos
+  usedCount     Int              @default(0) // Quantas vezes foi usado
+  
+  // Observações
+  notes         String?          // Observações do morador
+  
+  // Status
+  status        InvitationStatus @default(ACTIVE)
+  
+  // Timestamps
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+  usedAt        DateTime?        // Última vez que foi usado
+  
+  // Relacionamentos
+  host          User             @relation(fields: [hostId], references: [id], onDelete: Cascade)
+  usages        InvitationUsage[]
+
+  @@map("invitations")
+}
+
+// Registro de uso do convite
+model InvitationUsage {
+  id           String     @id @default(uuid())
+  invitationId String
+  usedAt       DateTime   @default(now())
+  
+  // Dados capturados no uso
+  visitorName  String?    // Nome informado pelo visitante
+  visitorPhone String?    // Telefone informado
+  
+  // Relacionamentos
+  invitation   Invitation @relation(fields: [invitationId], references: [id], onDelete: Cascade)
+
+  @@map("invitation_usages")
 }
