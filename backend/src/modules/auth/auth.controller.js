@@ -194,6 +194,28 @@ const updatePushToken = async (req, res, next) => {
 };
 
 /**
+ * Ativar usuário de teste (para desenvolvimento)
+ */
+const activateTestUser = async (req, res, next) => {
+  try {
+    const { email, condominiumId } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ error: 'Email é obrigatório' });
+    }
+
+    const result = await authService.activateTestUser(email, condominiumId);
+
+    res.json({
+      message: 'Usuário ativado com sucesso',
+      user: result.user
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * Seed admin - criar ou atualizar usuário admin inicial
  */
 const seedAdmin = async (req, res, next) => {
@@ -226,5 +248,6 @@ module.exports = {
   verifyResetToken,
   resetPassword,
   updatePushToken,
-  seedAdmin
+  seedAdmin,
+  activateTestUser
 };

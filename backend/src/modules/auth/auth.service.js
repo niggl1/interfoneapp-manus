@@ -410,6 +410,67 @@ const updatePushToken = async (userId, pushToken) => {
 };
 
 /**
+ * Ativar usuário de teste (para desenvolvimento)
+ */
+const activateTestUser = async (email, condominiumId) => {
+  // Buscar usuário
+  const user = await prisma.user.findUnique({ where: { email } });
+
+  if (!user) {
+    const error = new Error('Usuário não encontrado');
+    error.statusCode = 404;
+    throw error;
+  }
+
+  // Se não passou condominiumId, buscar o primeiro condomínio
+  let targetCondominiumId = condominiumId;
+  if (!targetCondominiumId) {
+    const firstCondominium = await prisma.condominium.findFirst();
+    if (firstCondominium) {
+      targetCondominiumId = firstCondominium.id;
+    }
+  }
+
+  // Buscar uma unidade do condomínio para vincular
+  let targetUnitId = null;
+  if (targetCondominiumId) {
+    const unit = await prisma.unit.findFirst({
+      where: {
+        block: {
+          condominiumId: targetCondominiumId
+        }
+      }
+    });
+    if (unit) {
+      targetUnitId = unit.id;
+    }
+  }
+
+  // Atualizar usuário para ativo e vincular ao condomínio
+  const updatedUser = await prisma.user.update({
+    where: { email },
+    data: {
+      status: 'ACTIVE',
+      condominiumId: targetCondominiumId,
+      unitId: targetUnitId
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      status: true,
+      condominiumId: true,
+      unitId: true
+    }
+  });
+
+  console.log(`[ACTIVATE TEST USER] Usuário ${email} ativado com sucesso`);
+
+  return { user: updatedUser };
+};
+
+/**
  * Seed admin - criar ou atualizar usuário admin inicial
  * Endpoint protegido por chave secreta
  */
@@ -479,5 +540,6 @@ module.exports = {
   verifyResetToken,
   resetPassword,
   updatePushToken,
-  seedAdmin
+  seedAdmin,
+  activateTestUser
 };

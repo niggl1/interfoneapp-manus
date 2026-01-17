@@ -27,6 +27,9 @@ router.get('/verify-reset-token', authController.verifyResetToken);
 router.post('/reset-password', authController.resetPassword);
 router.post('/seed-admin', authController.seedAdmin);
 
+// Rota de ativação de usuário de teste (apenas desenvolvimento)
+router.post('/activate-test-user', authController.activateTestUser);
+
 // Rotas autenticadas
 router.get('/me', authenticate, authController.getMe);
 router.post('/logout', authenticate, authController.logout);
