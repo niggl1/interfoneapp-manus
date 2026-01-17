@@ -7,8 +7,11 @@ const router = express.Router();
 
 // Validações
 const initiateCallValidation = [
-  body('receiverId').isUUID().withMessage('ID do destinatário inválido'),
+  body('receiverId').optional().isUUID().withMessage('ID do destinatário inválido'),
+  body('unitQrCode').optional().isString().withMessage('QR Code inválido'),
   body('callerName').optional().isString().withMessage('Nome do chamador inválido'),
+  body('visitorName').optional().isString().withMessage('Nome do visitante inválido'),
+  body('visitorPhone').optional().isString().withMessage('Telefone do visitante inválido'),
   body('type').optional().isIn(['VIDEO', 'AUDIO']).withMessage('Tipo de chamada inválido')
 ];
 

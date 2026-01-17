@@ -27,11 +27,21 @@ const generateTokens = (userId) => {
  */
 const register = async ({ email, password, name, phone }) => {
   // Verificar se email já existe
-  const existingUser = await prisma.user.findUnique({ where: { email } });
-  if (existingUser) {
+  const existingEmail = await prisma.user.findUnique({ where: { email } });
+  if (existingEmail) {
     const error = new Error('Email já cadastrado');
     error.statusCode = 409;
     throw error;
+  }
+
+  // Verificar se telefone já existe
+  if (phone) {
+    const existingPhone = await prisma.user.findFirst({ where: { phone } });
+    if (existingPhone) {
+      const error = new Error('Telefone já cadastrado');
+      error.statusCode = 409;
+      throw error;
+    }
   }
 
   // Hash da senha

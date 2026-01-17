@@ -11,15 +11,35 @@ const initiateCall = async (req, res) => {
       return res.status(400).json({ errors: errors.array() });
     }
 
-    const { receiverId, callerName, callerType, type } = req.body;
+    let { receiverId, callerName, callerType, type, unitQrCode, visitorName, visitorPhone } = req.body;
     const callerId = req.user?.id || null;
+
+    // Se foi passado QR Code em vez de receiverId, buscar o morador da unidade
+    if (!receiverId && unitQrCode) {
+      const unitData = await callsService.getUnitByQRCode(unitQrCode);
+      if (!unitData || !unitData.unit) {
+        return res.status(404).json({ error: 'Unidade não encontrada' });
+      }
+      
+      // Pegar o primeiro morador da unidade
+      if (unitData.unit.residents && unitData.unit.residents.length > 0) {
+        receiverId = unitData.unit.residents[0].id;
+      } else {
+        return res.status(404).json({ error: 'Nenhum morador encontrado nesta unidade' });
+      }
+    }
+
+    if (!receiverId) {
+      return res.status(400).json({ error: 'receiverId ou unitQrCode é obrigatório' });
+    }
 
     const call = await callsService.createCall({
       callerId,
       receiverId,
-      callerName: callerName || req.user?.name,
+      callerName: visitorName || callerName || req.user?.name,
       callerType: callerType || (req.user ? 'user' : 'visitor'),
-      type
+      type,
+      visitorPhone
     });
 
     // Emitir evento de chamada via Socket.io
