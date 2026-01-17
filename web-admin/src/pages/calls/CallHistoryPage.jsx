@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Clock, User, Video, Mic, Calendar } from 'lucide-react';
+import { Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Clock, User, Video, Mic, Calendar, Download, FileText, FileSpreadsheet } from 'lucide-react';
 import callsService from '../../services/callsService';
 import { useCall } from '../../context/CallContext';
+import { exportToCSV, exportToPDF, formatDate as formatDateUtil, formatCallStatus } from '../../utils/exportUtils';
 
 export default function CallHistoryPage() {
   const { isConnected } = useCall();
   const [calls, setCalls] = useState([]);
+  const [allCalls, setAllCalls] = useState([]); // Para exportação
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [filter, setFilter] = useState('all'); // all, made, received, missed
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1 });
 
@@ -30,6 +33,68 @@ export default function CallHistoryPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Buscar todos os dados para exportação
+  const fetchAllForExport = async () => {
+    setExporting(true);
+    try {
+      const type = filter === 'all' ? null : filter;
+      const data = await callsService.getCallHistory(1, 1000, type);
+      return data.calls || [];
+    } catch (error) {
+      console.error('Erro ao buscar dados para exportação:', error);
+      return calls;
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    const dataToExport = await fetchAllForExport();
+    
+    const columns = [
+      { key: 'callerName', label: 'Chamador' },
+      { key: 'receiverName', label: 'Receptor' },
+      { key: 'type', label: 'Tipo' },
+      { key: 'statusFormatted', label: 'Status' },
+      { key: 'duration', label: 'Duração (s)' },
+      { key: 'startedAtFormatted', label: 'Data/Hora' }
+    ];
+
+    const formattedData = dataToExport.map(call => ({
+      ...call,
+      callerName: call.caller?.name || call.callerName || 'Visitante',
+      receiverName: call.receiver?.name || '-',
+      statusFormatted: formatCallStatus(call.status),
+      startedAtFormatted: formatDateUtil(call.startedAt)
+    }));
+
+    exportToCSV(formattedData, columns, `chamadas_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  const handleExportPDF = async () => {
+    const dataToExport = await fetchAllForExport();
+    
+    const columns = [
+      { key: 'callerName', label: 'Chamador' },
+      { key: 'receiverName', label: 'Receptor' },
+      { key: 'type', label: 'Tipo' },
+      { key: 'statusFormatted', label: 'Status' },
+      { key: 'durationFormatted', label: 'Duração' },
+      { key: 'startedAtFormatted', label: 'Data/Hora' }
+    ];
+
+    const formattedData = dataToExport.map(call => ({
+      ...call,
+      callerName: call.caller?.name || call.callerName || 'Visitante',
+      receiverName: call.receiver?.name || '-',
+      statusFormatted: formatCallStatus(call.status),
+      durationFormatted: call.duration ? `${Math.floor(call.duration / 60)}:${(call.duration % 60).toString().padStart(2, '0')}` : '-',
+      startedAtFormatted: formatDateUtil(call.startedAt)
+    }));
+
+    exportToPDF(formattedData, columns, 'Relatório de Chamadas', `chamadas_${new Date().toISOString().split('T')[0]}`);
   };
 
   const getCallIcon = (call) => {
@@ -102,12 +167,36 @@ export default function CallHistoryPage() {
           </p>
         </div>
         
-        {/* Connection Status */}
-        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isConnected ? 'bg-green-100' : 'bg-red-100'}`}>
-          <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
-          <span className={`text-sm font-medium ${isConnected ? 'text-green-700' : 'text-red-700'}`}>
-            {isConnected ? 'Conectado' : 'Desconectado'}
-          </span>
+        <div className="flex items-center gap-3">
+          {/* Export Buttons */}
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCSV}
+              disabled={exporting || loading}
+              className="flex items-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
+              title="Exportar para Excel (CSV)"
+            >
+              <FileSpreadsheet className="w-4 h-4" />
+              <span className="hidden sm:inline">Excel</span>
+            </button>
+            <button
+              onClick={handleExportPDF}
+              disabled={exporting || loading}
+              className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+              title="Exportar para PDF"
+            >
+              <FileText className="w-4 h-4" />
+              <span className="hidden sm:inline">PDF</span>
+            </button>
+          </div>
+
+          {/* Connection Status */}
+          <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${isConnected ? 'bg-green-100' : 'bg-red-100'}`}>
+            <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'}`} />
+            <span className={`text-sm font-medium ${isConnected ? 'text-green-700' : 'text-red-700'}`}>
+              {isConnected ? 'Conectado' : 'Desconectado'}
+            </span>
+          </div>
         </div>
       </div>
 

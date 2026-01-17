@@ -1,12 +1,14 @@
 import { useState, useEffect } from 'react';
-import { Ticket, Calendar, User, Clock, CheckCircle, XCircle, AlertCircle, Search, Filter, Building2 } from 'lucide-react';
+import { Ticket, Calendar, User, Clock, CheckCircle, XCircle, AlertCircle, Search, Filter, Building2, FileText, FileSpreadsheet } from 'lucide-react';
 import invitationsService from '../../services/invitationsService';
 import { useAuth } from '../../context/AuthContext';
+import { exportToCSV, exportToPDF, formatDate as formatDateUtil, formatInvitationStatus } from '../../utils/exportUtils';
 
 export default function InvitationsPage() {
   const { user } = useAuth();
   const [invitations, setInvitations] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [exporting, setExporting] = useState(false);
   const [error, setError] = useState(null);
   const [pagination, setPagination] = useState({ page: 1, totalPages: 1, total: 0 });
   const [filter, setFilter] = useState('all'); // all, active, used, expired, cancelled
@@ -40,6 +42,71 @@ export default function InvitationsPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Buscar todos os dados para exportação
+  const fetchAllForExport = async () => {
+    setExporting(true);
+    try {
+      const data = await invitationsService.getAllInvitations(1, 1000, filter !== 'all' ? filter : undefined);
+      return data.invitations || [];
+    } catch (error) {
+      console.error('Erro ao buscar dados para exportação:', error);
+      return invitations;
+    } finally {
+      setExporting(false);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    const dataToExport = await fetchAllForExport();
+    
+    const columns = [
+      { key: 'code', label: 'Código' },
+      { key: 'visitorName', label: 'Visitante' },
+      { key: 'visitorPhone', label: 'Telefone' },
+      { key: 'hostName', label: 'Morador' },
+      { key: 'unitInfo', label: 'Unidade' },
+      { key: 'statusFormatted', label: 'Status' },
+      { key: 'validFromFormatted', label: 'Válido De' },
+      { key: 'validUntilFormatted', label: 'Válido Até' },
+      { key: 'usedCount', label: 'Usos' },
+      { key: 'maxUses', label: 'Máx. Usos' }
+    ];
+
+    const formattedData = dataToExport.map(inv => ({
+      ...inv,
+      hostName: inv.host?.name || '-',
+      unitInfo: inv.host?.unit ? `${inv.host.unit.block?.name || ''} - ${inv.host.unit.number}` : '-',
+      statusFormatted: formatInvitationStatus(inv.status),
+      validFromFormatted: formatDateUtil(inv.validFrom),
+      validUntilFormatted: formatDateUtil(inv.validUntil)
+    }));
+
+    exportToCSV(formattedData, columns, `convites_${new Date().toISOString().split('T')[0]}`);
+  };
+
+  const handleExportPDF = async () => {
+    const dataToExport = await fetchAllForExport();
+    
+    const columns = [
+      { key: 'code', label: 'Código' },
+      { key: 'visitorName', label: 'Visitante' },
+      { key: 'hostName', label: 'Morador' },
+      { key: 'unitInfo', label: 'Unidade' },
+      { key: 'statusFormatted', label: 'Status' },
+      { key: 'validUntilFormatted', label: 'Validade' }
+    ];
+
+    const formattedData = dataToExport.map(inv => ({
+      ...inv,
+      hostName: inv.host?.name || '-',
+      unitInfo: inv.host?.unit ? `${inv.host.unit.block?.name || ''} - ${inv.host.unit.number}` : '-',
+      statusFormatted: formatInvitationStatus(inv.status),
+      validUntilFormatted: formatDateUtil(inv.validUntil)
+    }));
+
+    exportToPDF(formattedData, columns, 'Relatório de Convites', `convites_${new Date().toISOString().split('T')[0]}`);
   };
 
   const handleCancelInvitation = async (id) => {
@@ -109,6 +176,28 @@ export default function InvitationsPage() {
           <p className="text-slate-500 mt-1">
             Gerencie os convites de visitantes do condomínio
           </p>
+        </div>
+        
+        {/* Export Buttons */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={handleExportCSV}
+            disabled={exporting || loading || error}
+            className="flex items-center gap-2 px-3 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
+            title="Exportar para Excel (CSV)"
+          >
+            <FileSpreadsheet className="w-4 h-4" />
+            <span className="hidden sm:inline">Excel</span>
+          </button>
+          <button
+            onClick={handleExportPDF}
+            disabled={exporting || loading || error}
+            className="flex items-center gap-2 px-3 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors disabled:opacity-50"
+            title="Exportar para PDF"
+          >
+            <FileText className="w-4 h-4" />
+            <span className="hidden sm:inline">PDF</span>
+          </button>
         </div>
       </div>
 
