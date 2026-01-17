@@ -1,4 +1,5 @@
 const { PrismaClient } = require('@prisma/client');
+const notificationsService = require('../notifications/notifications.service');
 
 const prisma = new PrismaClient();
 
@@ -480,6 +481,18 @@ const sendMessage = async (chatRoomId, senderId, content, type = 'text') => {
           avatar: true,
           role: true
         }
+      },
+      chatRoom: {
+        select: {
+          id: true,
+          name: true,
+          type: true,
+          members: {
+            select: {
+              userId: true
+            }
+          }
+        }
       }
     }
   });
@@ -489,6 +502,33 @@ const sendMessage = async (chatRoomId, senderId, content, type = 'text') => {
     where: { id: chatRoomId },
     data: { updatedAt: new Date() }
   });
+
+  // Enviar notificação para os outros membros do chat
+  try {
+    const senderName = message.sender?.name || 'Alguém';
+    const chatName = message.chatRoom?.name || 'Chat';
+    const isGroup = message.chatRoom?.type === 'GROUP';
+    
+    // Notificar todos os membros exceto o remetente
+    const otherMembers = message.chatRoom?.members?.filter(m => m.userId !== senderId) || [];
+    
+    for (const memberData of otherMembers) {
+      await notificationsService.createNotification({
+        userId: memberData.userId,
+        type: 'CHAT_MESSAGE',
+        title: isGroup ? chatName : `Nova mensagem de ${senderName}`,
+        body: isGroup ? `${senderName}: ${content.substring(0, 100)}` : content.substring(0, 100),
+        data: {
+          chatRoomId: chatRoomId,
+          messageId: message.id,
+          senderId: senderId,
+          senderName: senderName
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Erro ao enviar notificação de mensagem:', error);
+  }
 
   return message;
 };

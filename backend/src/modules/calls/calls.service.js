@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const notificationsService = require('../notifications/notifications.service');
 
 /**
  * Criar uma nova chamada
@@ -130,8 +131,42 @@ const missCall = async (callId) => {
     data: {
       status: 'MISSED',
       endedAt: new Date()
+    },
+    include: {
+      caller: {
+        select: {
+          id: true,
+          name: true
+        }
+      },
+      receiver: {
+        select: {
+          id: true,
+          name: true
+        }
+      }
     }
   });
+
+  // Enviar notificação de chamada perdida para o receptor
+  if (call.receiverId) {
+    try {
+      const callerName = call.callerName || call.caller?.name || 'Visitante';
+      await notificationsService.createNotification({
+        userId: call.receiverId,
+        type: 'CALL_MISSED',
+        title: 'Chamada perdida',
+        body: `Você perdeu uma chamada de ${callerName}`,
+        data: {
+          callId: call.id,
+          callerId: call.callerId,
+          callerName: callerName
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao enviar notificação de chamada perdida:', error);
+    }
+  }
 
   return call;
 };
